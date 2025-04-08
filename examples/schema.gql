@@ -1,0 +1,6 @@
+CREATE PROPERTY GRAPH TYPE socialNetworkType {
+		(:Person { name :: STRING NOT NULL, age :: INT8 }),
+		(:Post { content :: STRING, created_at :: DATE }),
+		(:Person)~[:is_friend { since :: DATE NOT NULL }]~(:Person),
+		(:Person)-[:likes { since :: DATE NOT NULL }]->(:Post)
+}

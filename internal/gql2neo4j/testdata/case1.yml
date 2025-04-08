@@ -1,0 +1,8 @@
+input: |-
+  CREATE PROPERTY GRAPH TYPE someGraphType {
+    (:Person { name :: STRING NOT NULL, age :: INT8 })
+  }
+want: |-
+  CREATE CONSTRAINT constraint_person_name_type FOR (n:Person) REQUIRE n.name IS :: STRING;
+  CREATE CONSTRAINT constraint_person_name_existence FOR (n:Person) REQUIRE n.name IS NOT NULL;
+  CREATE CONSTRAINT constraint_person_age_type FOR (n:Person) REQUIRE n.age IS :: INTEGER;

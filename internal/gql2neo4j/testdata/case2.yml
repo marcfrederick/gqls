@@ -1,0 +1,6 @@
+input: |-
+  CREATE PROPERTY GRAPH TYPE someGraphType {
+    (:Post { content :: STRING })
+  }
+want: |-
+  CREATE CONSTRAINT constraint_post_content_type FOR (n:Post) REQUIRE n.content IS :: STRING;

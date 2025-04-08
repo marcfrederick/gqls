@@ -1,0 +1,28 @@
+# Binaries
+gqls
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Project files
+examples/
+assets/
+Makefile
+LICENSE*
+NOTICE
+README.md
