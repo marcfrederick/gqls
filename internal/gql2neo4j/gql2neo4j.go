@@ -9,6 +9,7 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 
 	"github.com/marcfrederick/gqls/internal/gql"
+	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/gql/parser"
 	"github.com/marcfrederick/gqls/internal/neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
@@ -63,7 +64,7 @@ func GenerateConstraints(graphType *gql.GraphType, version string) ([]constraint
 				result = append(result, constraint)
 			}
 
-			if property.PropertyValueType.NotNull {
+			if !property.PropertyValueType.IsNullable() {
 				result = append(result, createExistenceConstraint(nodeLabel, property.PropertyName))
 			}
 		}
@@ -99,7 +100,7 @@ func createExistenceConstraint(label, property string) *constraints.PropertyExis
 }
 
 func buildPropertyTypeConstraint(label string, property *gql.PropertyType) (*constraints.PropertyTypeConstraint, error) {
-	neo4jType, err := mapGQLTypeToNeo4j(property.PropertyValueType.ValueType)
+	neo4jType, err := mapGQLTypeToNeo4j(property.PropertyValueType)
 	if err != nil {
 		return nil, err
 	}
@@ -118,33 +119,40 @@ func formatConstraintName(kind, label, property string) string {
 }
 
 // mapGQLTypeToNeo4j maps a GQL type to a Neo4j property type.
-// TODO: Consider supporting precision mappings.
-func mapGQLTypeToNeo4j(gqlType string) (neo4j.PropertyType, error) {
-	switch strings.ToUpper(gqlType) {
-	case "BOOLEAN", "BOOL":
-		return neo4j.Boolean, nil
-	case "STRING", "CHAR", "VARCHAR":
+func mapGQLTypeToNeo4j(descriptor datatype.Descriptor) (neo4j.PropertyType, error) {
+	switch gqlType := descriptor.(type) {
+	case *datatype.CharacterStringDataTypeDescriptor, *datatype.ByteStringDataTypeDescriptor:
 		return neo4j.String, nil
-	case "INT", "INTEGER", "INT8", "INTEGER8", "INT16", "INTEGER16",
-		"INT32", "INTEGER32", "INT64", "INTEGER64",
-		"UINT8", "UINT16", "UINT32", "SMALLINT", "SMALL INTEGER", "USMALLINT":
-		return neo4j.Integer, nil
-	case "FLOAT", "FLOAT16", "FLOAT32", "FLOAT64", "REAL":
-		return neo4j.Float, nil
-	case "DATE":
-		return neo4j.Date, nil
-	case "ZONED DATETIME", "TIMESTAMP WITH TIME ZONE":
-		return neo4j.ZonedDateTime, nil
-	case "LOCAL DATETIME", "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE":
-		return neo4j.LocalDateTime, nil
-	case "ZONED TIME", "TIME WITH TIME ZONE":
-		return neo4j.ZonedTime, nil
-	case "LOCAL TIME", "TIME WITHOUT TIME ZONE":
-		return neo4j.LocalTime, nil
-	case "DURATION":
-		return neo4j.Duration, nil
+	case *datatype.NumericDataTypeDescriptor:
+		switch gqlType.Kind {
+		case datatype.NumericKindExact:
+			return neo4j.Integer, nil
+		case datatype.NumericKindFloat:
+			return neo4j.Float, nil
+		default:
+			panic("unreachable")
+		}
+	case *datatype.MiscellaneousDataTypeDescriptor:
+		switch strings.ToUpper(gqlType.Kind) {
+		case "BOOL", "BOOLEAN":
+			return neo4j.Boolean, nil
+		case "DATE":
+			return neo4j.Date, nil
+		case "ZONED DATETIME", "TIMESTAMP WITH TIME ZONE":
+			return neo4j.ZonedDateTime, nil
+		case "LOCAL DATETIME", "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE":
+			return neo4j.LocalDateTime, nil
+		case "ZONED TIME", "TIME WITH TIME ZONE":
+			return neo4j.ZonedTime, nil
+		case "LOCAL TIME", "TIME WITHOUT TIME ZONE":
+			return neo4j.LocalTime, nil
+		case "DURATION":
+			return neo4j.Duration, nil
+		default:
+			return "", fmt.Errorf("unsupported GQL type: %s", gqlType.Kind)
+		}
 	default:
-		return "", fmt.Errorf("unsupported GQL type: %s", gqlType)
+		panic("unreachable")
 	}
 }
 

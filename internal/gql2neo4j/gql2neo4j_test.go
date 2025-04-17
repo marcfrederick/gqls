@@ -3,13 +3,14 @@ package gql2neo4j_test
 import (
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/goccy/go-yaml"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/marcfrederick/gqls/internal/gql"
+	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 )
@@ -71,12 +72,18 @@ func TestGenerateConstraints(t *testing.T) {
 							NodeTypeLabelSet: []string{"Person"},
 							PropertyTypeSet: []*gql.PropertyType{
 								{
-									PropertyName:      "name",
-									PropertyValueType: &gql.ValueType{ValueType: "STRING"},
+									PropertyName: "name",
+									PropertyValueType: &datatype.CharacterStringDataTypeDescriptor{
+										Nullable: true,
+									},
 								},
 								{
-									PropertyName:      "age",
-									PropertyValueType: &gql.ValueType{ValueType: "INT8", NotNull: true},
+									PropertyName: "age",
+									PropertyValueType: &datatype.NumericDataTypeDescriptor{
+										Kind:     datatype.NumericKindExact,
+										Radix:    datatype.RadixDecimal,
+										Nullable: false,
+									},
 								},
 							},
 						},
@@ -118,8 +125,11 @@ func TestGenerateConstraints(t *testing.T) {
 							NodeTypeLabelSet: []string{"Person"},
 							PropertyTypeSet: []*gql.PropertyType{
 								{
-									PropertyName:      "name",
-									PropertyValueType: &gql.ValueType{ValueType: "STRING"},
+									PropertyName: "foo",
+									PropertyValueType: &datatype.MiscellaneousDataTypeDescriptor{
+										Kind:     "BAR",
+										Nullable: true,
+									},
 								},
 							},
 						},
@@ -138,9 +148,7 @@ func TestGenerateConstraints(t *testing.T) {
 				t.Errorf("GenerateConstraints() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GenerateConstraints() got = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, got, tt.want, "GenerateConstraints() got = %v, want %v", got, tt.want)
 		})
 	}
 }

@@ -4,8 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/gql/parser"
 )
 
@@ -62,6 +66,7 @@ func (l *CreateGraphTypeListener) parseElementTypeSpecification(elementTypeSpec 
 		}
 		graphType.EdgeTypeSet = append(graphType.EdgeTypeSet, edgeType)
 	}
+
 	return nil
 }
 
@@ -119,16 +124,174 @@ func (l *CreateGraphTypeListener) parsePropertyTypesSpecification(ctx parser.IPr
 	return propertyTypeSet, nil
 }
 
-func (l *CreateGraphTypeListener) parseValueType(ctx parser.IPropertyTypeContext) (*ValueType, error) {
-	valueType := ctx.PropertyValueType().GetText()
-	notNull := strings.HasSuffix(valueType, "NOTNULL")
-	if notNull {
-		valueType = strings.TrimSuffix(valueType, "NOTNULL")
+func (l *CreateGraphTypeListener) parseValueType(ctx parser.IPropertyTypeContext) (datatype.Descriptor, error) {
+	predefinedTypeLabelCtx, ok := ctx.PropertyValueType().ValueType().(*parser.PredefinedTypeLabelContext)
+	if !ok {
+		return nil, fmt.Errorf("error parsing value type: non-predefined types not supported")
 	}
-	return &ValueType{
-		ValueType: valueType,
-		NotNull:   notNull,
+
+	predefinedType := predefinedTypeLabelCtx.PredefinedType()
+
+	switch {
+	case predefinedType.CharacterStringType() != nil:
+		characterStringType := predefinedType.CharacterStringType()
+		minLength, maxLength := -1, -1
+		if characterStringType.MinLength() != nil {
+			minLength, _ = strconv.Atoi(characterStringType.MinLength().GetText())
+		}
+		if characterStringType.MaxLength() != nil {
+			maxLength, _ = strconv.Atoi(characterStringType.MaxLength().GetText())
+		}
+		return &datatype.CharacterStringDataTypeDescriptor{
+			MinLength: minLength,
+			MaxLength: maxLength,
+			Nullable:  l.parseNotNull(characterStringType.NotNull()),
+		}, nil
+	case predefinedType.ByteStringType() != nil:
+		byteStringType := predefinedType.ByteStringType()
+		minLength, maxLength := -1, -1
+		if byteStringType.MinLength() != nil {
+			minLength, _ = strconv.Atoi(byteStringType.MinLength().GetText())
+		}
+		if byteStringType.MaxLength() != nil {
+			maxLength, _ = strconv.Atoi(byteStringType.MaxLength().GetText())
+		}
+		return &datatype.ByteStringDataTypeDescriptor{
+			MinLength: minLength,
+			MaxLength: maxLength,
+			Nullable:  l.parseNotNull(byteStringType.NotNull()),
+		}, nil
+	case predefinedType.NumericType() != nil:
+		numericType := predefinedType.NumericType()
+		switch {
+		case numericType.ExactNumericType() != nil:
+			switch {
+			case numericType.ExactNumericType().DecimalExactNumericType() != nil:
+				return l.parseDecimalExactNumericType(numericType.ExactNumericType().DecimalExactNumericType())
+			case numericType.ExactNumericType().BinaryExactNumericType() != nil:
+				return l.parseBinaryExactNumericType(numericType.ExactNumericType().BinaryExactNumericType())
+			default:
+				panic("unreachable")
+			}
+		case numericType.ApproximateNumericType() != nil:
+			return l.parseApproximateNumericType(numericType.ApproximateNumericType())
+		default:
+			panic("unreachable")
+		}
+	default:
+		valueType := ctx.PropertyValueType().GetText()
+		notNull := strings.HasSuffix(valueType, "NOTNULL")
+		if notNull {
+			valueType = strings.TrimSuffix(valueType, "NOTNULL")
+		}
+		return &datatype.MiscellaneousDataTypeDescriptor{
+			Kind:     valueType,
+			Nullable: !notNull,
+		}, nil
+	}
+}
+
+func (l *CreateGraphTypeListener) parseDecimalExactNumericType(_ parser.IDecimalExactNumericTypeContext) (*datatype.NumericDataTypeDescriptor, error) {
+	return nil, fmt.Errorf("decimal exact numeric type is not supported: %w", ErrNotImplemented)
+}
+
+func (l *CreateGraphTypeListener) parseBinaryExactNumericType(ctx parser.IBinaryExactNumericTypeContext) (*datatype.NumericDataTypeDescriptor, error) {
+	switch {
+	case ctx.SignedBinaryExactNumericType() != nil:
+		signedBinaryExactNumericType := ctx.SignedBinaryExactNumericType()
+		var precision int
+		switch {
+		case signedBinaryExactNumericType.INT8() != nil:
+			precision = 8
+		case signedBinaryExactNumericType.INT16() != nil:
+			precision = 16
+		case signedBinaryExactNumericType.INT32() != nil:
+			precision = 32
+		case signedBinaryExactNumericType.INT64() != nil:
+			precision = 64
+		case signedBinaryExactNumericType.INT128() != nil:
+			precision = 128
+		case signedBinaryExactNumericType.INT256() != nil:
+			precision = 256
+		default:
+			// TODO: Handle REAL, FLOAT, and DOUBLE types
+			parsedPrecision, err := parseOptionalInt(signedBinaryExactNumericType.Precision())
+			if err != nil {
+				return nil, fmt.Errorf("error parsing precision: %w", err)
+			}
+			precision = parsedPrecision
+		}
+
+		return &datatype.NumericDataTypeDescriptor{
+			Kind:      datatype.NumericKindExact,
+			Radix:     datatype.RadixBinary,
+			Precision: precision,
+			Scale:     -1,
+			Nullable:  l.parseNotNull(signedBinaryExactNumericType.NotNull()),
+		}, nil
+	case ctx.UnsignedBinaryExactNumericType() != nil:
+		return nil, fmt.Errorf("unsigned binary exact numeric type is not supported: %w", ErrNotImplemented)
+	default:
+		panic("unreachable")
+	}
+}
+
+// parseApproximateNumericType parses the approximate numeric type (e.g., FLOAT, DOUBLE).
+func (l *CreateGraphTypeListener) parseApproximateNumericType(ctx parser.IApproximateNumericTypeContext) (*datatype.NumericDataTypeDescriptor, error) {
+	var precision int
+	switch {
+	case ctx.FLOAT16() != nil:
+		precision = 16
+	case ctx.FLOAT32() != nil:
+		precision = 32
+	case ctx.FLOAT64() != nil:
+		precision = 64
+	case ctx.FLOAT128() != nil:
+		precision = 128
+	case ctx.FLOAT256() != nil:
+		precision = 256
+	default:
+		// TODO: Handle SMALLINT, INTEGER, and BIGINT types
+		parsedPrecision, err := parseOptionalInt(ctx.Precision())
+		if err != nil {
+			return nil, fmt.Errorf("error parsing precision: %w", err)
+		}
+		precision = parsedPrecision
+	}
+
+	scale, err := parseOptionalInt(ctx.Scale())
+	if err != nil {
+		return nil, fmt.Errorf("error parsing scale: %w", err)
+	}
+
+	return &datatype.NumericDataTypeDescriptor{
+		Kind:      datatype.NumericKindFloat,
+		Radix:     datatype.RadixBinary,
+		Precision: precision,
+		Scale:     scale,
+		Nullable:  l.parseNotNull(ctx.NotNull()),
 	}, nil
+}
+
+func parseOptionalInt(node antlr.ParserRuleContext) (int, error) {
+	if node == nil {
+		return -1, nil
+	}
+
+	// somewhat hacky, but avoids some more complex logic
+	value, err := strconv.Atoi(node.GetText())
+	if err != nil {
+		return -1, fmt.Errorf("error parsing integer value: %w", err)
+	}
+	return value, nil
+}
+
+// parseNotNull parses the NOT NULL constraint from the context.
+func (l *CreateGraphTypeListener) parseNotNull(ctx parser.INotNullContext) bool {
+	if ctx != nil && ctx.NOT() != nil {
+		return false
+	}
+	return true
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*EdgeType, error) {
@@ -236,5 +399,9 @@ func (l *CreateGraphTypeListener) parseEdgeTypePatternUndirected(ctx parser.IEdg
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]*PropertyType, error) {
-	return l.parsePropertyTypesSpecification(ctx.EdgeTypeImpliedContent().EdgeTypePropertyTypes().PropertyTypesSpecification())
+	edgeTypePropertyTypes := ctx.EdgeTypeImpliedContent().EdgeTypePropertyTypes()
+	if edgeTypePropertyTypes == nil {
+		return []*PropertyType{}, nil
+	}
+	return l.parsePropertyTypesSpecification(edgeTypePropertyTypes.PropertyTypesSpecification())
 }

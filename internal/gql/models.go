@@ -1,15 +1,11 @@
 package gql
 
-// ValueType represents a value type.
-type ValueType struct {
-	ValueType string
-	NotNull   bool
-}
+import "github.com/marcfrederick/gqls/internal/gql/datatype"
 
 // PropertyType represents a property type.
 type PropertyType struct {
 	PropertyName      string
-	PropertyValueType *ValueType
+	PropertyValueType datatype.Descriptor
 }
 
 // NodeType represents a node type.
