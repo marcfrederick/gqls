@@ -14,7 +14,7 @@ import (
 )
 
 // ConvertString parses a GQL schema and generates Neo4j constraints for the specified version.
-func ConvertString(data, neo4jVersion string) (string, error) {
+func ConvertString(data, neo4jVersion string, apocEnabled bool) (string, error) {
 	parsed, err := parseGQL(data)
 	if err != nil {
 		return "", fmt.Errorf("error parsing GQL: %w", err)
@@ -22,7 +22,7 @@ func ConvertString(data, neo4jVersion string) (string, error) {
 
 	var result strings.Builder
 	for _, graphType := range parsed.CreateGraphTypeStatements {
-		schemaObjects, err := Convert(graphType, neo4jVersion)
+		schemaObjects, err := Convert(graphType, neo4jVersion, apocEnabled)
 		if err != nil {
 			return "", fmt.Errorf("error converting graph type: %w", err)
 		}
@@ -35,14 +35,14 @@ func ConvertString(data, neo4jVersion string) (string, error) {
 }
 
 // Convert builds Neo4j constraints from a GQL GraphType definition.
-func Convert(graphType *gql.GraphType, version string) ([]neo4j.SchemaObject, error) {
+func Convert(graphType *gql.GraphType, version string, apocEnabled bool) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, nodeType := range graphType.NodeTypeSet {
 		label := nodeType.NodeTypeLabelSet[0] // TODO: support multiple labels
 
 		for _, prop := range nodeType.PropertyTypeSet {
-			if c, err := buildTypeConstraint(label, prop, version); err != nil {
+			if c, err := buildTypeConstraint(label, prop, version, apocEnabled); err != nil {
 				return nil, err
 			} else if c != nil {
 				schemaObjects = append(schemaObjects, c...)
@@ -58,7 +58,7 @@ func Convert(graphType *gql.GraphType, version string) ([]neo4j.SchemaObject, er
 }
 
 // buildTypeConstraint returns a property type constraint if the Neo4j version supports it.
-func buildTypeConstraint(label string, property *gql.PropertyType, version string) ([]neo4j.SchemaObject, error) {
+func buildTypeConstraint(label string, property *gql.PropertyType, version string, apocEnabled bool) ([]neo4j.SchemaObject, error) {
 	supported, err := isVersionSupported(version, "5.9")
 	if err != nil {
 		return nil, fmt.Errorf("version check failed: %w", err)
@@ -68,7 +68,7 @@ func buildTypeConstraint(label string, property *gql.PropertyType, version strin
 		return nil, nil
 	}
 
-	return createPropertyTypeConstraint(label, property)
+	return createPropertyTypeConstraint(label, property, apocEnabled)
 }
 
 // buildExistenceConstraint constructs a non-null existence constraint.
@@ -81,7 +81,7 @@ func buildExistenceConstraint(label, property string) *constraints.PropertyExist
 }
 
 // createPropertyTypeConstraint maps the GQL type and builds a constraint.
-func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType, apocEnabled bool) ([]neo4j.SchemaObject, error) {
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor, *datatype.ByteStringDataTypeDescriptor:
 		return []neo4j.SchemaObject{
@@ -110,7 +110,7 @@ func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType) 
 			},
 		}
 
-		if valueType.Precision != 64 {
+		if apocEnabled && valueType.Precision != 64 {
 			typeMin := -math.Pow(2, float64(valueType.Precision-1))
 			typeMax := math.Pow(2, float64(valueType.Precision-1)) - 1
 			out = append(out, &triggers.Trigger{
@@ -147,26 +147,6 @@ func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType) 
 // formatConstraintName standardizes constraint names.
 func formatConstraintName(kind, label, property string) string {
 	return strings.ToLower(fmt.Sprintf("constraint_%s_%s_%s", label, property, kind))
-}
-
-// mapGQLTypeToNeo4j translates GQL data types to Neo4j property types.
-func mapGQLTypeToNeo4j(descriptor datatype.Descriptor) (neo4j.PropertyType, error) {
-	switch gqlType := descriptor.(type) {
-	case *datatype.CharacterStringDataTypeDescriptor, *datatype.ByteStringDataTypeDescriptor:
-		return neo4j.String, nil
-	case *datatype.NumericDataTypeDescriptor:
-		switch gqlType.Kind {
-		case datatype.NumericKindExact:
-			return neo4j.Integer, nil
-		case datatype.NumericKindFloat:
-			return neo4j.Float, nil
-		default:
-			return "", fmt.Errorf("error unexpected numeric kind: %v", gqlType.Kind)
-		}
-	case *datatype.MiscellaneousDataTypeDescriptor:
-		return mapMiscGQLTypeToNeo4j(gqlType.Kind)
-	}
-	return "", fmt.Errorf("error unsupported GQL type: %T", descriptor)
 }
 
 // mapMiscGQLTypeToNeo4j handles miscellaneous GQL types.

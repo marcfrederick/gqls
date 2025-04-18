@@ -33,7 +33,7 @@ func TestConvertString(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc := loadTestCase(t, path)
 
-			got, err := gql2neo4j.ConvertString(tc.Input, "")
+			got, err := gql2neo4j.ConvertString(tc.Input, "", true)
 			if err != nil {
 				t.Errorf("ConvertString() returned error: %v", err)
 			}
@@ -147,7 +147,7 @@ func TestConvert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gql2neo4j.Convert(tt.args.graphType, tt.args.neo4jVersion)
+			got, err := gql2neo4j.Convert(tt.args.graphType, tt.args.neo4jVersion, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Convert() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -31,6 +31,11 @@ func main() {
 				Usage:    "Specify the Neo4j version to use for conversion",
 				Required: false,
 			},
+			&cli.BoolFlag{
+				Name:        "apoc",
+				Usage:       "Generate APOC triggers",
+				DefaultText: "false",
+			},
 		},
 		Action: run,
 	}
@@ -43,13 +48,14 @@ func main() {
 func run(ctx context.Context, cmd *cli.Command) error {
 	inputPath := cmd.String("input")
 	neo4jVersion := cmd.String("neo4j-version")
+	apocEnabled := cmd.Bool("apoc")
 
 	content, err := readInput(inputPath)
 	if err != nil {
 		return fmt.Errorf("failed to read input: %w", err)
 	}
 
-	converted, err := gql2neo4j.ConvertString(string(content), neo4jVersion)
+	converted, err := gql2neo4j.ConvertString(string(content), neo4jVersion, apocEnabled)
 	if err != nil {
 		return fmt.Errorf("failed to convert GQL to Neo4j format: %w", err)
 	}
