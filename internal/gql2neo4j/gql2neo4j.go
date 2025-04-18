@@ -72,10 +72,8 @@ func buildTypeConstraint(label string, property *gql.PropertyType, version strin
 // buildExistenceConstraint constructs a non-null existence constraint.
 func buildExistenceConstraint(label, property string) *constraints.PropertyExistenceConstraint {
 	return &constraints.PropertyExistenceConstraint{
-		BaseConstraint: constraints.BaseConstraint{
-			Name:    formatConstraintName("existence", label, property),
-			Pattern: fmt.Sprintf("(n:%s)", label),
-		},
+		Name:         formatConstraintName("existence", label, property),
+		Pattern:      fmt.Sprintf("(n:%s)", label),
 		PropertyName: fmt.Sprintf("n.%s", property),
 	}
 }
@@ -87,10 +85,8 @@ func createPropertyTypeConstraint(label string, property *gql.PropertyType) (*co
 		return nil, err
 	}
 	return &constraints.PropertyTypeConstraint{
-		BaseConstraint: constraints.BaseConstraint{
-			Name:    formatConstraintName("type", label, property.PropertyName),
-			Pattern: fmt.Sprintf("(n:%s)", label),
-		},
+		Name:         formatConstraintName("type", label, property.PropertyName),
+		Pattern:      fmt.Sprintf("(n:%s)", label),
 		PropertyName: fmt.Sprintf("n.%s", property.PropertyName),
 		PropertyType: string(neo4jType),
 	}, nil

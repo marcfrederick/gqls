@@ -92,26 +92,20 @@ func TestConvert(t *testing.T) {
 			},
 			want: []constraints.Constraint{
 				&constraints.PropertyTypeConstraint{
-					BaseConstraint: constraints.BaseConstraint{
-						Name:    "constraint_person_name_type",
-						Pattern: "(n:Person)",
-					},
+					Name:         "constraint_person_name_type",
+					Pattern:      "(n:Person)",
 					PropertyName: "n.name",
 					PropertyType: "STRING",
 				},
 				&constraints.PropertyTypeConstraint{
-					BaseConstraint: constraints.BaseConstraint{
-						Name:    "constraint_person_age_type",
-						Pattern: "(n:Person)",
-					},
+					Name:         "constraint_person_age_type",
+					Pattern:      "(n:Person)",
 					PropertyName: "n.age",
 					PropertyType: "INTEGER",
 				},
 				&constraints.PropertyExistenceConstraint{
-					BaseConstraint: constraints.BaseConstraint{
-						Name:    "constraint_person_age_existence",
-						Pattern: "(n:Person)",
-					},
+					Name:         "constraint_person_age_existence",
+					Pattern:      "(n:Person)",
 					PropertyName: "n.age",
 				},
 			},

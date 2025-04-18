@@ -2,16 +2,6 @@ package constraints
 
 import "fmt"
 
-// ConstraintType defines different types of constraints.
-type ConstraintType uint8
-
-const (
-	Unique      ConstraintType = iota // Ensures uniqueness of a property
-	Existence                         // Ensures a property is not null
-	TypeEnforce                       // Enforces a specific property type
-	Key                               // Defines a property as a key
-)
-
 // SubjectType defines the subject of a constraint.
 type SubjectType uint8
 
@@ -21,21 +11,19 @@ const (
 )
 
 // Constraint is a common interface for all constraints.
+//
+//sumtype:decl
 type Constraint interface {
-	fmt.Stringer
-	ConstraintType() ConstraintType
-	GetBase() *BaseConstraint
-}
+	// sealed is a marker to ensure that all types are sealed.
+	sealed()
 
-// BaseConstraint provides shared fields.
-type BaseConstraint struct {
-	Name    string
-	Pattern string
+	fmt.Stringer
 }
 
 // PropertyUniquenessConstraint ensures uniqueness.
 type PropertyUniquenessConstraint struct {
-	BaseConstraint
+	Name         string
+	Pattern      string
 	PropertyName string
 }
 
@@ -45,17 +33,12 @@ func (c *PropertyUniquenessConstraint) String() string {
 	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS UNIQUE", c.Name, c.Pattern, c.PropertyName)
 }
 
-func (*PropertyUniquenessConstraint) ConstraintType() ConstraintType {
-	return Unique
-}
-
-func (c *PropertyUniquenessConstraint) GetBase() *BaseConstraint {
-	return &c.BaseConstraint
-}
+func (*PropertyUniquenessConstraint) sealed() {}
 
 // PropertyExistenceConstraint ensures a property is not null.
 type PropertyExistenceConstraint struct {
-	BaseConstraint
+	Name         string
+	Pattern      string
 	PropertyName string
 }
 
@@ -65,17 +48,12 @@ func (c *PropertyExistenceConstraint) String() string {
 	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS NOT NULL", c.Name, c.Pattern, c.PropertyName)
 }
 
-func (*PropertyExistenceConstraint) ConstraintType() ConstraintType {
-	return Existence
-}
-
-func (c *PropertyExistenceConstraint) GetBase() *BaseConstraint {
-	return &c.BaseConstraint
-}
+func (*PropertyExistenceConstraint) sealed() {}
 
 // PropertyTypeConstraint enforces a specific type.
 type PropertyTypeConstraint struct {
-	BaseConstraint
+	Name         string
+	Pattern      string
 	PropertyName string
 	PropertyType string
 }
@@ -86,17 +64,12 @@ func (c *PropertyTypeConstraint) String() string {
 	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS :: %s", c.Name, c.Pattern, c.PropertyName, c.PropertyType)
 }
 
-func (*PropertyTypeConstraint) ConstraintType() ConstraintType {
-	return TypeEnforce
-}
-
-func (c *PropertyTypeConstraint) GetBase() *BaseConstraint {
-	return &c.BaseConstraint
-}
+func (*PropertyTypeConstraint) sealed() {}
 
 // KeyConstraint ensures a property is a key.
 type KeyConstraint struct {
-	BaseConstraint
+	Name         string
+	Pattern      string
 	PropertyName string
 	SubjectType  SubjectType
 }
@@ -109,15 +82,8 @@ func (c *KeyConstraint) String() string {
 		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS NODE KEY", c.Name, c.Pattern, c.PropertyName)
 	case RelationshipType:
 		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS RELATIONSHIP KEY", c.Name, c.Pattern, c.PropertyName)
-	default:
-		panic(fmt.Sprintf("invalid subject type: %d", c.SubjectType))
 	}
+	panic(fmt.Sprintf("invalid subject type: %d", c.SubjectType))
 }
 
-func (*KeyConstraint) ConstraintType() ConstraintType {
-	return Key
-}
-
-func (c *KeyConstraint) GetBase() *BaseConstraint {
-	return &c.BaseConstraint
-}
+func (*KeyConstraint) sealed() {}
