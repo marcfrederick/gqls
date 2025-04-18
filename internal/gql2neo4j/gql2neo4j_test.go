@@ -20,7 +20,7 @@ type testCase struct {
 	Want  string `yaml:"want"`
 }
 
-func TestConvert(t *testing.T) {
+func TestConvertString(t *testing.T) {
 	testCasePaths, err := filepath.Glob("testdata/*.yml")
 	if err != nil {
 		t.Fatalf("failed to find test cases: %v", err)
@@ -31,21 +31,21 @@ func TestConvert(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc := loadTestCase(t, path)
 
-			got, err := gql2neo4j.Convert(tc.Input, "")
+			got, err := gql2neo4j.ConvertString(tc.Input, "")
 			if err != nil {
-				t.Errorf("Convert() returned error: %v", err)
+				t.Errorf("ConvertString() returned error: %v", err)
 			}
 
 			got = strings.TrimSpace(got)
 			want := strings.TrimSpace(tc.Want)
 			if got != want {
-				t.Errorf("Convert() got = %v, want %v", got, want)
+				t.Errorf("ConvertString() got = %v, want %v", got, want)
 			}
 		})
 	}
 }
 
-func TestGenerateConstraints(t *testing.T) {
+func TestConvert(t *testing.T) {
 	type args struct {
 		graphType    *gql.GraphType
 		neo4jVersion string
@@ -143,12 +143,12 @@ func TestGenerateConstraints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gql2neo4j.GenerateConstraints(tt.args.graphType, tt.args.neo4jVersion)
+			got, err := gql2neo4j.Convert(tt.args.graphType, tt.args.neo4jVersion)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GenerateConstraints() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Convert() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			assert.Equal(t, got, tt.want, "GenerateConstraints() got = %v, want %v", got, tt.want)
+			assert.Equal(t, got, tt.want, "Convert() got = %v, want %v", got, tt.want)
 		})
 	}
 }

@@ -15,7 +15,7 @@ import (
 func main() {
 	app := &cli.Command{
 		Name:      "gqls",
-		Usage:     "Convert a GQL schema into Neo4j format",
+		Usage:     "ConvertString a GQL schema into Neo4j format",
 		ArgsUsage: "[input]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -49,7 +49,7 @@ func run(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to read input: %w", err)
 	}
 
-	converted, err := gql2neo4j.Convert(string(content), neo4jVersion)
+	converted, err := gql2neo4j.ConvertString(string(content), neo4jVersion)
 	if err != nil {
 		return fmt.Errorf("failed to convert GQL to Neo4j format: %w", err)
 	}
