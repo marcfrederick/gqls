@@ -21,7 +21,9 @@ jobs:
         run: go build -v ./...
       - name: Test
         run: go test -v ./...
+      - name: gochecksumtype
+        run: go tool go-check-sumtype $(go list ./... | grep -v vendor)
       - name: Lint
         uses: golangci/golangci-lint-action@1481404843c368bc19ca9406f87d6e0fc97bdcfd # v7.0.0
         with:
-          version: v2.0
+          version: v2.1

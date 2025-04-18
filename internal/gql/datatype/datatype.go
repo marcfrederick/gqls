@@ -2,9 +2,14 @@ package datatype
 
 // Descriptor describes a GQL data type.
 // Based on chapter 4.16 of the GQL standard.
+//
+//sumtype:decl
 type Descriptor interface {
 	// IsNullable returns true if the data type is nullable, false otherwise.
 	IsNullable() bool
+
+	// sealed is a marker to ensure that all types are sealed.
+	sealed()
 }
 
 // --- CHARACTER STRING ---
@@ -19,6 +24,7 @@ type CharacterStringDataTypeDescriptor struct {
 var _ Descriptor = (*CharacterStringDataTypeDescriptor)(nil)
 
 func (c *CharacterStringDataTypeDescriptor) IsNullable() bool { return c.Nullable }
+func (c *CharacterStringDataTypeDescriptor) sealed()          {}
 
 // --- BYTE STRING ---
 
@@ -32,6 +38,7 @@ type ByteStringDataTypeDescriptor struct {
 var _ Descriptor = (*ByteStringDataTypeDescriptor)(nil)
 
 func (b *ByteStringDataTypeDescriptor) IsNullable() bool { return b.Nullable }
+func (b *ByteStringDataTypeDescriptor) sealed()          {}
 
 // --- NUMERIC ---
 
@@ -63,6 +70,7 @@ type NumericDataTypeDescriptor struct {
 var _ Descriptor = (*NumericDataTypeDescriptor)(nil)
 
 func (n *NumericDataTypeDescriptor) IsNullable() bool { return n.Nullable }
+func (n *NumericDataTypeDescriptor) sealed()          {}
 
 // --- MISCELLANEOUS ---
 
@@ -75,3 +83,4 @@ type MiscellaneousDataTypeDescriptor struct {
 var _ Descriptor = (*MiscellaneousDataTypeDescriptor)(nil)
 
 func (m *MiscellaneousDataTypeDescriptor) IsNullable() bool { return m.Nullable }
+func (m *MiscellaneousDataTypeDescriptor) sealed()          {}

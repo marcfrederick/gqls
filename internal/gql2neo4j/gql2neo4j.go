@@ -117,9 +117,8 @@ func mapGQLTypeToNeo4j(descriptor datatype.Descriptor) (neo4j.PropertyType, erro
 		}
 	case *datatype.MiscellaneousDataTypeDescriptor:
 		return mapMiscGQLTypeToNeo4j(gqlType.Kind)
-	default:
-		return "", fmt.Errorf("error unsupported GQL type: %T", descriptor)
 	}
+	return "", fmt.Errorf("error unsupported GQL type: %T", descriptor)
 }
 
 // mapMiscGQLTypeToNeo4j handles miscellaneous GQL types.

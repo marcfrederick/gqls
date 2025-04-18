@@ -16,6 +16,9 @@ build: generate
 
 lint:
 	golangci-lint run ./...
+	# go-check-sumtype is included in golangci-lint, but doesn't work properly,
+	# so we run it separately
+	go tool go-check-sumtype $$(go list ./... | grep -v vendor)
 
 test: generate
 	go test -v ./...
