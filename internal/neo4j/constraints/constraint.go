@@ -1,6 +1,10 @@
 package constraints
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/marcfrederick/gqls/internal/neo4j"
+)
 
 // SubjectType defines the subject of a constraint.
 type SubjectType uint8
@@ -17,7 +21,7 @@ type Constraint interface {
 	// sealed is a marker to ensure that all types are sealed.
 	sealed()
 
-	fmt.Stringer
+	neo4j.SchemaObject
 }
 
 // PropertyUniquenessConstraint ensures uniqueness.
@@ -29,7 +33,7 @@ type PropertyUniquenessConstraint struct {
 
 var _ Constraint = (*PropertyUniquenessConstraint)(nil)
 
-func (c *PropertyUniquenessConstraint) String() string {
+func (c *PropertyUniquenessConstraint) CreateStatement() string {
 	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS UNIQUE", c.Name, c.Pattern, c.PropertyName)
 }
 
@@ -44,7 +48,7 @@ type PropertyExistenceConstraint struct {
 
 var _ Constraint = (*PropertyExistenceConstraint)(nil)
 
-func (c *PropertyExistenceConstraint) String() string {
+func (c *PropertyExistenceConstraint) CreateStatement() string {
 	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS NOT NULL", c.Name, c.Pattern, c.PropertyName)
 }
 
@@ -60,7 +64,7 @@ type PropertyTypeConstraint struct {
 
 var _ Constraint = (*PropertyTypeConstraint)(nil)
 
-func (c *PropertyTypeConstraint) String() string {
+func (c *PropertyTypeConstraint) CreateStatement() string {
 	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS :: %s", c.Name, c.Pattern, c.PropertyName, c.PropertyType)
 }
 
@@ -76,7 +80,7 @@ type KeyConstraint struct {
 
 var _ Constraint = (*KeyConstraint)(nil)
 
-func (c *KeyConstraint) String() string {
+func (c *KeyConstraint) CreateStatement() string {
 	switch c.SubjectType {
 	case NodeType:
 		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS NODE KEY", c.Name, c.Pattern, c.PropertyName)

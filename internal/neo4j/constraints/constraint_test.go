@@ -6,7 +6,7 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 )
 
-func TestPropertyUniquenessConstraint_String(t *testing.T) {
+func TestPropertyUniquenessConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.PropertyUniquenessConstraint{
 		PropertyName: "sub.some_property",
 		Name:         "some_name",
@@ -14,12 +14,12 @@ func TestPropertyUniquenessConstraint_String(t *testing.T) {
 	}
 
 	want := "CREATE CONSTRAINT some_name FOR (sub:Label) REQUIRE sub.some_property IS UNIQUE"
-	if got := constraint.String(); got != want {
-		t.Errorf("String() = %v, want %v", got, want)
+	if got := constraint.CreateStatement(); got != want {
+		t.Errorf("CreateStatement() = %v, want %v", got, want)
 	}
 }
 
-func TestPropertyExistenceConstraint_String(t *testing.T) {
+func TestPropertyExistenceConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.PropertyExistenceConstraint{
 		PropertyName: "sub.some_property",
 		Name:         "some_name",
@@ -27,12 +27,12 @@ func TestPropertyExistenceConstraint_String(t *testing.T) {
 	}
 
 	want := "CREATE CONSTRAINT some_name FOR (sub:Label) REQUIRE sub.some_property IS NOT NULL"
-	if got := constraint.String(); got != want {
-		t.Errorf("String() = %v, want %v", got, want)
+	if got := constraint.CreateStatement(); got != want {
+		t.Errorf("CreateStatement() = %v, want %v", got, want)
 	}
 }
 
-func TestPropertyTypeConstraint_String(t *testing.T) {
+func TestPropertyTypeConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.PropertyTypeConstraint{
 		PropertyName: "sub.some_property",
 		PropertyType: "STRING",
@@ -41,12 +41,12 @@ func TestPropertyTypeConstraint_String(t *testing.T) {
 	}
 
 	want := "CREATE CONSTRAINT some_name FOR (sub:Label) REQUIRE sub.some_property IS :: STRING"
-	if got := constraint.String(); got != want {
-		t.Errorf("String() = %v, want %v", got, want)
+	if got := constraint.CreateStatement(); got != want {
+		t.Errorf("CreateStatement() = %v, want %v", got, want)
 	}
 }
 
-func TestKeyConstraint_String(t *testing.T) {
+func TestKeyConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.KeyConstraint{
 		PropertyName: "sub.some_property",
 		SubjectType:  constraints.NodeType,
@@ -55,7 +55,7 @@ func TestKeyConstraint_String(t *testing.T) {
 	}
 
 	want := "CREATE CONSTRAINT some_name FOR (sub:Label) REQUIRE sub.some_property IS NODE KEY"
-	if got := constraint.String(); got != want {
-		t.Errorf("String() = %v, want %v", got, want)
+	if got := constraint.CreateStatement(); got != want {
+		t.Errorf("CreateStatement() = %v, want %v", got, want)
 	}
 }

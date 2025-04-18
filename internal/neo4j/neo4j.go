@@ -17,3 +17,9 @@ const (
 	ZonedDateTime PropertyType = "ZONED DATETIME"
 	ZonedTime     PropertyType = "ZONED TIME"
 )
+
+// SchemaObject represents a schema object in Neo4j.
+type SchemaObject interface {
+	// CreateStatement generates the CREATE statement for the schema object.
+	CreateStatement() string
+}

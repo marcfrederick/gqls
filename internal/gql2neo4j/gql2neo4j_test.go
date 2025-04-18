@@ -12,7 +12,9 @@ import (
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
+	"github.com/marcfrederick/gqls/internal/neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
+	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
 )
 
 type testCase struct {
@@ -53,7 +55,7 @@ func TestConvert(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    []constraints.Constraint
+		want    []neo4j.SchemaObject
 		wantErr bool
 	}{
 		{
@@ -80,9 +82,10 @@ func TestConvert(t *testing.T) {
 								{
 									PropertyName: "age",
 									PropertyValueType: &datatype.NumericDataTypeDescriptor{
-										Kind:     datatype.NumericKindExact,
-										Radix:    datatype.RadixDecimal,
-										Nullable: false,
+										Kind:      datatype.NumericKindExact,
+										Radix:     datatype.RadixDecimal,
+										Precision: 8,
+										Nullable:  false,
 									},
 								},
 							},
@@ -90,7 +93,7 @@ func TestConvert(t *testing.T) {
 					},
 				},
 			},
-			want: []constraints.Constraint{
+			want: []neo4j.SchemaObject{
 				&constraints.PropertyTypeConstraint{
 					Name:         "constraint_person_name_type",
 					Pattern:      "(n:Person)",
@@ -102,6 +105,13 @@ func TestConvert(t *testing.T) {
 					Pattern:      "(n:Person)",
 					PropertyName: "n.age",
 					PropertyType: "INTEGER",
+				},
+				&triggers.Trigger{
+					Name:              "constraint_person_age_trigger",
+					KernelTransaction: "UNWIND $createdNodes AS node WITH node WHERE node:Person AND node.age IS NOT NULL AND (node.age < -128 OR node.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', [])",
+					Selector: triggers.Selector{
+						Phase: triggers.Before,
+					},
 				},
 				&constraints.PropertyExistenceConstraint{
 					Name:         "constraint_person_age_existence",
