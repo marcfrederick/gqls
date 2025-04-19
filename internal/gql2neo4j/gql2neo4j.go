@@ -2,8 +2,8 @@ package gql2neo4j
 
 import (
 	"fmt"
+	"log"
 	"math"
-	"os"
 	"strings"
 
 	"github.com/marcfrederick/gqls/internal/gql"
@@ -13,8 +13,21 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
 )
 
+var ErrUnsupported = fmt.Errorf("unsupported")
+
+type Opts struct {
+	// Neo4jVersion is the version of Neo4j to generate constraints for.
+	Neo4jVersion string
+	// ApocEnabled indicates if APOC is enabled in the Neo4j instance.
+	ApocEnabled bool
+}
+
+func ConvertBytes(data []byte, opts Opts) (string, error) {
+	return ConvertString(string(data), opts)
+}
+
 // ConvertString parses a GQL schema and generates Neo4j constraints for the specified version.
-func ConvertString(data, neo4jVersion string, apocEnabled bool) (string, error) {
+func ConvertString(data string, opts Opts) (string, error) {
 	parsed, err := parseGQL(data)
 	if err != nil {
 		return "", fmt.Errorf("error parsing GQL: %w", err)
@@ -22,7 +35,7 @@ func ConvertString(data, neo4jVersion string, apocEnabled bool) (string, error) 
 
 	var result strings.Builder
 	for _, graphType := range parsed.CreateGraphTypeStatements {
-		schemaObjects, err := Convert(graphType, neo4jVersion, apocEnabled)
+		schemaObjects, err := Convert(graphType, opts)
 		if err != nil {
 			return "", fmt.Errorf("error converting graph type: %w", err)
 		}
@@ -35,38 +48,51 @@ func ConvertString(data, neo4jVersion string, apocEnabled bool) (string, error) 
 }
 
 // Convert builds Neo4j constraints from a GQL GraphType definition.
-func Convert(graphType *gql.GraphType, version string, apocEnabled bool) ([]neo4j.SchemaObject, error) {
+func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, nodeType := range graphType.NodeTypeSet {
-		label := nodeType.NodeTypeLabelSet[0] // TODO: support multiple labels
-
-		for _, prop := range nodeType.PropertyTypeSet {
-			if c, err := buildTypeConstraint(label, prop, version, apocEnabled); err != nil {
-				return nil, err
-			} else if c != nil {
-				schemaObjects = append(schemaObjects, c...)
-			}
-
-			if !prop.PropertyValueType.IsNullable() {
-				schemaObjects = append(schemaObjects, buildExistenceConstraint(label, prop.PropertyName))
-			}
+		if len(nodeType.NodeTypeLabelSet) != 1 {
+			return nil, fmt.Errorf("error Neo4j only supports one label per node type: %w", ErrUnsupported)
 		}
+		label := nodeType.NodeTypeLabelSet[0]
+
+		objects, err := processProperties(label, nodeType.PropertyTypeSet, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error processing properties: %w", err)
+		}
+		schemaObjects = append(schemaObjects, objects...)
 	}
 
 	for _, edgeType := range graphType.EdgeTypeSet {
-		label := edgeType.EdgeTypeLabelSet[0] // TODO: support multiple labels
+		if len(edgeType.EdgeTypeLabelSet) != 1 {
+			return nil, fmt.Errorf("error Neo4j only supports one label per edge type: %w", ErrUnsupported)
+		}
+		label := edgeType.EdgeTypeLabelSet[0]
 
-		for _, prop := range edgeType.EdgeTypePropertySet {
-			if c, err := buildTypeConstraint(label, prop, version, apocEnabled); err != nil {
-				return nil, err
-			} else if c != nil {
-				schemaObjects = append(schemaObjects, c...)
-			}
+		objects, err := processProperties(label, edgeType.EdgeTypePropertySet, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error processing properties: %w", err)
+		}
+		schemaObjects = append(schemaObjects, objects...)
+	}
 
-			if !prop.PropertyValueType.IsNullable() {
-				schemaObjects = append(schemaObjects, buildExistenceConstraint(label, prop.PropertyName))
-			}
+	return schemaObjects, nil
+}
+
+// processProperties processes properties for a given label and version.
+func processProperties(label string, properties []*gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
+	var schemaObjects []neo4j.SchemaObject
+
+	for _, prop := range properties {
+		typeConstraints, err := buildTypeConstraint(label, prop, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error building type constraint: %w", err)
+		}
+		schemaObjects = append(schemaObjects, typeConstraints...)
+
+		if !prop.PropertyValueType.IsNullable() {
+			schemaObjects = append(schemaObjects, buildExistenceConstraint(label, prop.PropertyName))
 		}
 	}
 
@@ -74,17 +100,17 @@ func Convert(graphType *gql.GraphType, version string, apocEnabled bool) ([]neo4
 }
 
 // buildTypeConstraint returns a property type constraint if the Neo4j version supports it.
-func buildTypeConstraint(label string, property *gql.PropertyType, version string, apocEnabled bool) ([]neo4j.SchemaObject, error) {
-	supported, err := isVersionSupported(version, "5.9")
+func buildTypeConstraint(label string, property *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
+	supported, err := isVersionSupported(opts.Neo4jVersion, "5.9")
 	if err != nil {
 		return nil, fmt.Errorf("version check failed: %w", err)
 	}
 	if !supported {
-		_, _ = fmt.Fprintf(os.Stderr, "Property type constraints unsupported in Neo4j version %s\n", version)
+		log.Printf("Property type constraints unsupported in Neo4j version %s\n", opts.Neo4jVersion)
 		return nil, nil
 	}
 
-	return createPropertyTypeConstraint(label, property, apocEnabled)
+	return createPropertyTypeConstraint(label, property, opts)
 }
 
 // buildExistenceConstraint constructs a non-null existence constraint.
@@ -97,7 +123,7 @@ func buildExistenceConstraint(label, property string) *constraints.PropertyExist
 }
 
 // createPropertyTypeConstraint maps the GQL type and builds a constraint.
-func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType, apocEnabled bool) ([]neo4j.SchemaObject, error) {
+func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor, *datatype.ByteStringDataTypeDescriptor:
 		return []neo4j.SchemaObject{
@@ -126,7 +152,7 @@ func createPropertyTypeConstraint(label string, propertyType *gql.PropertyType, 
 			},
 		}
 
-		if apocEnabled && valueType.Precision != 64 {
+		if opts.ApocEnabled && valueType.Precision != 64 {
 			typeMin := -math.Pow(2, float64(valueType.Precision-1))
 			typeMax := math.Pow(2, float64(valueType.Precision-1)) - 1
 			out = append(out, &triggers.Trigger{

@@ -286,12 +286,9 @@ func parseOptionalInt(node antlr.ParserRuleContext) (int, error) {
 	return value, nil
 }
 
-// parseNotNull parses the NOT NULL constraint from the context.
-func (l *CreateGraphTypeListener) parseNotNull(ctx parser.INotNullContext) bool {
-	if ctx != nil && ctx.NOT() != nil {
-		return false
-	}
-	return true
+// parseNotNull checks if the NOT NULL constraint is absent.
+func (l *CreateGraphTypeListener) parseNotNull(notNullContext parser.INotNullContext) bool {
+	return notNullContext == nil || notNullContext.NOT() == nil
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*EdgeType, error) {
@@ -302,6 +299,7 @@ func (l *CreateGraphTypeListener) parseEdgeTypeSpecification(ctx parser.IEdgeTyp
 		}
 		return edgeType, nil
 	} else if edgeTypePhrase := ctx.EdgeTypePhrase(); edgeTypePhrase != nil {
+		// edge type phrases work with aliases; they are not yet implemented
 		return nil, fmt.Errorf("error edge type phrase not yet implemented: %w", ErrNotImplemented)
 	} else {
 		panic("unreachable")

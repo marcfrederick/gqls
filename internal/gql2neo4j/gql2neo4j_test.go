@@ -33,7 +33,7 @@ func TestConvertString(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc := loadTestCase(t, path)
 
-			got, err := gql2neo4j.ConvertString(tc.Input, "", true)
+			got, err := gql2neo4j.ConvertString(tc.Input, gql2neo4j.Opts{ApocEnabled: true})
 			if err != nil {
 				t.Errorf("ConvertString() returned error: %v", err)
 			}
@@ -49,8 +49,8 @@ func TestConvertString(t *testing.T) {
 
 func TestConvert(t *testing.T) {
 	type args struct {
-		graphType    *gql.GraphType
-		neo4jVersion string
+		graphType *gql.GraphType
+		opts      gql2neo4j.Opts
 	}
 	tests := []struct {
 		name    string
@@ -91,6 +91,9 @@ func TestConvert(t *testing.T) {
 							},
 						},
 					},
+				},
+				opts: gql2neo4j.Opts{
+					ApocEnabled: true,
 				},
 			},
 			want: []neo4j.SchemaObject{
@@ -139,7 +142,10 @@ func TestConvert(t *testing.T) {
 						},
 					},
 				},
-				neo4jVersion: "5.8",
+				opts: gql2neo4j.Opts{
+					Neo4jVersion: "5.8",
+					ApocEnabled:  true,
+				},
 			},
 			want: nil,
 		},
@@ -147,7 +153,7 @@ func TestConvert(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := gql2neo4j.Convert(tt.args.graphType, tt.args.neo4jVersion, true)
+			got, err := gql2neo4j.Convert(tt.args.graphType, tt.args.opts)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Convert() error = %v, wantErr %v", err, tt.wantErr)
 				return
