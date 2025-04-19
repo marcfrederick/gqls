@@ -2,7 +2,6 @@ package gql2neo4j
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"strings"
@@ -56,7 +55,6 @@ func Convert(graphType *gql.GraphType, version string, apocEnabled bool) ([]neo4
 	}
 
 	for _, edgeType := range graphType.EdgeTypeSet {
-		log.Printf("edgeType: %#v\n", edgeType)
 		label := edgeType.EdgeTypeLabelSet[0] // TODO: support multiple labels
 
 		for _, prop := range edgeType.EdgeTypePropertySet {

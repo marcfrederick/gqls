@@ -295,107 +295,73 @@ func (l *CreateGraphTypeListener) parseNotNull(ctx parser.INotNullContext) bool 
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*EdgeType, error) {
-	var edgeType EdgeType
-
-	switch {
-	case ctx.EdgeTypePattern() != nil:
-		if err := l.parseEdgeTypePattern(ctx.EdgeTypePattern(), &edgeType); err != nil {
+	if edgeTypePattern := ctx.EdgeTypePattern(); edgeTypePattern != nil {
+		edgeType, err := l.parseEdgeTypePattern(edgeTypePattern)
+		if err != nil {
 			return nil, fmt.Errorf("error parsing edge type pattern: %w", err)
 		}
-	case ctx.EdgeTypePhrase() != nil:
+		return edgeType, nil
+	} else if edgeTypePhrase := ctx.EdgeTypePhrase(); edgeTypePhrase != nil {
 		return nil, fmt.Errorf("error edge type phrase not yet implemented: %w", ErrNotImplemented)
-	default:
+	} else {
 		panic("unreachable")
 	}
-
-	return &edgeType, nil
 }
 
-func (l *CreateGraphTypeListener) parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext, e *EdgeType) error {
+func (l *CreateGraphTypeListener) parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error) {
 	if directed := ctx.EdgeTypePatternDirected(); directed != nil {
-		e.Directed = true
 		if pointingRight := directed.EdgeTypePatternPointingRight(); pointingRight != nil {
-			return l.parseEdgeTypePatternPointingRight(pointingRight, e)
+			return l.parseEdgeType(
+				true,
+				pointingRight.SourceNodeTypeReference().NodeTypeFiller(),
+				pointingRight.DestinationNodeTypeReference().NodeTypeFiller(),
+				pointingRight.ArcTypePointingRight().EdgeTypeFiller(),
+			)
 		} else if pointingLeft := directed.EdgeTypePatternPointingLeft(); pointingLeft != nil {
-			return l.parseEdgeTypePatternPointingLeft(pointingLeft, e)
+			return l.parseEdgeType(
+				true,
+				pointingLeft.SourceNodeTypeReference().NodeTypeFiller(),
+				pointingLeft.DestinationNodeTypeReference().NodeTypeFiller(),
+				pointingLeft.ArcTypePointingLeft().EdgeTypeFiller(),
+			)
 		} else {
-			return fmt.Errorf("error invalid directed edge type pattern: %s", ctx.GetText())
+			return nil, fmt.Errorf("error invalid directed edge type pattern: %s", ctx.GetText())
 		}
 	} else if undirected := ctx.EdgeTypePatternUndirected(); undirected != nil {
-		e.Directed = false
-		return l.parseEdgeTypePatternUndirected(undirected, e)
+		return l.parseEdgeType(
+			false,
+			undirected.SourceNodeTypeReference().NodeTypeFiller(),
+			undirected.DestinationNodeTypeReference().NodeTypeFiller(),
+			undirected.ArcTypeUndirected().EdgeTypeFiller(),
+		)
 	} else {
-		return fmt.Errorf("error invalid edge type pattern: %s", ctx.GetText())
+		return nil, fmt.Errorf("error invalid edge type pattern: %s", ctx.GetText())
 	}
 }
 
-func (l *CreateGraphTypeListener) parseEdgeTypePatternPointingRight(ctx parser.IEdgeTypePatternPointingRightContext, e *EdgeType) error {
-	source, err := l.parseNodeTypeFiller(ctx.SourceNodeTypeReference().NodeTypeFiller())
+func (l *CreateGraphTypeListener) parseEdgeType(directed bool, sourceCtx, destCtx parser.INodeTypeFillerContext, edgeTypeFillerCtx parser.IEdgeTypeFillerContext) (*EdgeType, error) {
+	source, err := l.parseNodeTypeFiller(sourceCtx)
 	if err != nil {
-		return fmt.Errorf("error parsing source node type: %w", err)
+		return nil, fmt.Errorf("error parsing source node type: %w", err)
 	}
-	e.SourceNodeType = source
 
-	destination, err := l.parseNodeTypeFiller(ctx.DestinationNodeTypeReference().NodeTypeFiller())
+	destination, err := l.parseNodeTypeFiller(destCtx)
 	if err != nil {
-		return fmt.Errorf("error parsing destination node type: %w", err)
+		return nil, fmt.Errorf("error parsing destination node type: %w", err)
 	}
-	e.DestinationNodeType = destination
 
-	labelSet, propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypePointingRight().EdgeTypeFiller())
+	labelSet, propertySet, err := l.parseEdgeTypeFiller(edgeTypeFillerCtx)
 	if err != nil {
-		return fmt.Errorf("error parsing property types specification: %w", err)
+		return nil, fmt.Errorf("error parsing property types specification: %w", err)
 	}
-	e.EdgeTypeLabelSet = labelSet
-	e.EdgeTypePropertySet = propertySet
 
-	return nil
-}
-
-func (l *CreateGraphTypeListener) parseEdgeTypePatternPointingLeft(ctx parser.IEdgeTypePatternPointingLeftContext, e *EdgeType) error {
-	source, err := l.parseNodeTypeFiller(ctx.SourceNodeTypeReference().NodeTypeFiller())
-	if err != nil {
-		return fmt.Errorf("error parsing source node type: %w", err)
-	}
-	e.SourceNodeType = source
-
-	destination, err := l.parseNodeTypeFiller(ctx.DestinationNodeTypeReference().NodeTypeFiller())
-	if err != nil {
-		return fmt.Errorf("error parsing destination node type: %w", err)
-	}
-	e.DestinationNodeType = destination
-
-	labelSet, propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypePointingLeft().EdgeTypeFiller())
-	if err != nil {
-		return fmt.Errorf("error parsing property types specification: %w", err)
-	}
-	e.EdgeTypeLabelSet = labelSet
-	e.EdgeTypePropertySet = propertySet
-
-	return nil
-}
-
-func (l *CreateGraphTypeListener) parseEdgeTypePatternUndirected(ctx parser.IEdgeTypePatternUndirectedContext, e *EdgeType) error {
-	source, err := l.parseNodeTypeFiller(ctx.SourceNodeTypeReference().NodeTypeFiller())
-	if err != nil {
-		return fmt.Errorf("error parsing source node type: %w", err)
-	}
-	e.SourceNodeType = source
-
-	destination, err := l.parseNodeTypeFiller(ctx.DestinationNodeTypeReference().NodeTypeFiller())
-	if err != nil {
-		return fmt.Errorf("error parsing destination node type: %w", err)
-	}
-	e.DestinationNodeType = destination
-
-	labelSet, propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypeUndirected().EdgeTypeFiller())
-	if err != nil {
-		return fmt.Errorf("error parsing property types specification: %w", err)
-	}
-	e.EdgeTypeLabelSet = labelSet
-	e.EdgeTypePropertySet = propertySet
-
-	return nil
+	return &EdgeType{
+		Directed:            directed,
+		SourceNodeType:      source,
+		DestinationNodeType: destination,
+		EdgeTypeLabelSet:    labelSet,
+		EdgeTypePropertySet: propertySet,
+	}, nil
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]string, []*PropertyType, error) {
@@ -403,8 +369,6 @@ func (l *CreateGraphTypeListener) parseEdgeTypeFiller(ctx parser.IEdgeTypeFiller
 	if impliedContent == nil {
 		return nil, nil, fmt.Errorf("error: missing implied content in edge type filler")
 	}
-
-	labelSet := l.parseLabelSetPhrase(impliedContent.EdgeTypeLabelSet().LabelSetPhrase())
 
 	var propertyTypesSpec []*PropertyType
 	if edgeTypePropertyTypes := impliedContent.EdgeTypePropertyTypes(); edgeTypePropertyTypes != nil {
@@ -415,5 +379,5 @@ func (l *CreateGraphTypeListener) parseEdgeTypeFiller(ctx parser.IEdgeTypeFiller
 		}
 	}
 
-	return labelSet, propertyTypesSpec, nil
+	return l.parseLabelSetPhrase(impliedContent.EdgeTypeLabelSet().LabelSetPhrase()), propertyTypesSpec, nil
 }

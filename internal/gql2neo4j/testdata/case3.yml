@@ -1,0 +1,13 @@
+input: |-
+  CREATE PROPERTY GRAPH TYPE someGraphType {
+    (:Person { name :: STRING }),
+    (:Person)~[:is_friend { since :: DATE NOT NULL }]~(:Person),
+    (:Person)-[:likes { since :: DATE NOT NULL }]->(:Post)
+  }
+want: |-
+  CREATE CONSTRAINT constraint_person_name_type FOR (n:Person) REQUIRE n.name IS :: STRING;
+  CREATE CONSTRAINT constraint_is_friend_since_type FOR (n:is_friend) REQUIRE n.since IS :: DATE;
+  CREATE CONSTRAINT constraint_is_friend_since_existence FOR (n:is_friend) REQUIRE n.since IS NOT NULL;
+  CREATE CONSTRAINT constraint_likes_since_type FOR (n:likes) REQUIRE n.since IS :: DATE;
+  CREATE CONSTRAINT constraint_likes_since_existence FOR (n:likes) REQUIRE n.since IS NOT NULL;
+  
