@@ -312,14 +312,14 @@ func (l *CreateGraphTypeListener) parseEdgeTypePattern(ctx parser.IEdgeTypePatte
 	if directed := ctx.EdgeTypePatternDirected(); directed != nil {
 		if pointingRight := directed.EdgeTypePatternPointingRight(); pointingRight != nil {
 			return l.parseEdgeType(
-				true,
+				EdgeKindDirected,
 				pointingRight.SourceNodeTypeReference().NodeTypeFiller(),
 				pointingRight.DestinationNodeTypeReference().NodeTypeFiller(),
 				pointingRight.ArcTypePointingRight().EdgeTypeFiller(),
 			)
 		} else if pointingLeft := directed.EdgeTypePatternPointingLeft(); pointingLeft != nil {
 			return l.parseEdgeType(
-				true,
+				EdgeKindDirected,
 				pointingLeft.SourceNodeTypeReference().NodeTypeFiller(),
 				pointingLeft.DestinationNodeTypeReference().NodeTypeFiller(),
 				pointingLeft.ArcTypePointingLeft().EdgeTypeFiller(),
@@ -329,7 +329,7 @@ func (l *CreateGraphTypeListener) parseEdgeTypePattern(ctx parser.IEdgeTypePatte
 		}
 	} else if undirected := ctx.EdgeTypePatternUndirected(); undirected != nil {
 		return l.parseEdgeType(
-			false,
+			EdgeKindUndirected,
 			undirected.SourceNodeTypeReference().NodeTypeFiller(),
 			undirected.DestinationNodeTypeReference().NodeTypeFiller(),
 			undirected.ArcTypeUndirected().EdgeTypeFiller(),
@@ -339,7 +339,7 @@ func (l *CreateGraphTypeListener) parseEdgeTypePattern(ctx parser.IEdgeTypePatte
 	}
 }
 
-func (l *CreateGraphTypeListener) parseEdgeType(directed bool, sourceCtx, destCtx parser.INodeTypeFillerContext, edgeTypeFillerCtx parser.IEdgeTypeFillerContext) (*EdgeType, error) {
+func (l *CreateGraphTypeListener) parseEdgeType(edgeTypeKind EdgeKind, sourceCtx, destCtx parser.INodeTypeFillerContext, edgeTypeFillerCtx parser.IEdgeTypeFillerContext) (*EdgeType, error) {
 	source, err := l.parseNodeTypeFiller(sourceCtx)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing source node type: %w", err)
@@ -356,7 +356,7 @@ func (l *CreateGraphTypeListener) parseEdgeType(directed bool, sourceCtx, destCt
 	}
 
 	return &EdgeType{
-		Directed:            directed,
+		Kind:                edgeTypeKind,
 		SourceNodeType:      source,
 		DestinationNodeType: destination,
 		EdgeTypeLabelSet:    labelSet,

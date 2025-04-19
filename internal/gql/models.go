@@ -14,6 +14,16 @@ type NodeType struct {
 	PropertyTypeSet  []*PropertyType
 }
 
+// EdgeKind represents the kind of edge type.
+type EdgeKind int
+
+const (
+	// EdgeKindDirected represents a directed edge type.
+	EdgeKindDirected EdgeKind = iota
+	// EdgeKindUndirected represents an undirected edge type.
+	EdgeKindUndirected
+)
+
 // EdgeType represents an edge type.
 //
 // Each edge type specification has a set of edge type labels, a set of edge
@@ -28,8 +38,8 @@ type EdgeType struct {
 	SourceNodeType *NodeType
 	// DestinationNodeType the other endpoint node type.
 	DestinationNodeType *NodeType
-	// Directed is true if the edge is directed, false otherwise.
-	Directed bool
+	// Kind is the edge type kind (directed or undirected).
+	Kind EdgeKind
 }
 
 // GraphType represents a graph type as a collection of node and edge type specifications.
