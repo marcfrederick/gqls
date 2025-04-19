@@ -312,24 +312,21 @@ func (l *CreateGraphTypeListener) parseEdgeTypeSpecification(ctx parser.IEdgeTyp
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext, e *EdgeType) error {
-	patternDirected := ctx.EdgeTypePatternDirected()
-	patternUndirected := ctx.EdgeTypePatternUndirected()
-
-	if patternDirected != nil {
-		if patternDirected.EdgeTypePatternPointingRight() != nil {
-			e.Directed = true
-			return l.parseEdgeTypePatternPointingRight(patternDirected.EdgeTypePatternPointingRight(), e)
+	if directed := ctx.EdgeTypePatternDirected(); directed != nil {
+		e.Directed = true
+		if pointingRight := directed.EdgeTypePatternPointingRight(); pointingRight != nil {
+			return l.parseEdgeTypePatternPointingRight(pointingRight, e)
+		} else if pointingLeft := directed.EdgeTypePatternPointingLeft(); pointingLeft != nil {
+			return l.parseEdgeTypePatternPointingLeft(pointingLeft, e)
+		} else {
+			return fmt.Errorf("error invalid directed edge type pattern: %s", ctx.GetText())
 		}
-		if patternDirected.EdgeTypePatternPointingLeft() != nil {
-			e.Directed = true
-			return l.parseEdgeTypePatternPointingLeft(patternDirected.EdgeTypePatternPointingLeft(), e)
-		}
-	} else if patternUndirected != nil {
+	} else if undirected := ctx.EdgeTypePatternUndirected(); undirected != nil {
 		e.Directed = false
-		return l.parseEdgeTypePatternUndirected(patternUndirected, e)
+		return l.parseEdgeTypePatternUndirected(undirected, e)
+	} else {
+		return fmt.Errorf("error invalid edge type pattern: %s", ctx.GetText())
 	}
-
-	panic("unreachable")
 }
 
 func (l *CreateGraphTypeListener) parseEdgeTypePatternPointingRight(ctx parser.IEdgeTypePatternPointingRightContext, e *EdgeType) error {
@@ -345,10 +342,11 @@ func (l *CreateGraphTypeListener) parseEdgeTypePatternPointingRight(ctx parser.I
 	}
 	e.DestinationNodeType = destination
 
-	propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypePointingRight().EdgeTypeFiller())
+	labelSet, propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypePointingRight().EdgeTypeFiller())
 	if err != nil {
 		return fmt.Errorf("error parsing property types specification: %w", err)
 	}
+	e.EdgeTypeLabelSet = labelSet
 	e.EdgeTypePropertySet = propertySet
 
 	return nil
@@ -367,10 +365,11 @@ func (l *CreateGraphTypeListener) parseEdgeTypePatternPointingLeft(ctx parser.IE
 	}
 	e.DestinationNodeType = destination
 
-	propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypePointingLeft().EdgeTypeFiller())
+	labelSet, propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypePointingLeft().EdgeTypeFiller())
 	if err != nil {
 		return fmt.Errorf("error parsing property types specification: %w", err)
 	}
+	e.EdgeTypeLabelSet = labelSet
 	e.EdgeTypePropertySet = propertySet
 
 	return nil
@@ -389,19 +388,32 @@ func (l *CreateGraphTypeListener) parseEdgeTypePatternUndirected(ctx parser.IEdg
 	}
 	e.DestinationNodeType = destination
 
-	propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypeUndirected().EdgeTypeFiller())
+	labelSet, propertySet, err := l.parseEdgeTypeFiller(ctx.ArcTypeUndirected().EdgeTypeFiller())
 	if err != nil {
 		return fmt.Errorf("error parsing property types specification: %w", err)
 	}
+	e.EdgeTypeLabelSet = labelSet
 	e.EdgeTypePropertySet = propertySet
 
 	return nil
 }
 
-func (l *CreateGraphTypeListener) parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]*PropertyType, error) {
-	edgeTypePropertyTypes := ctx.EdgeTypeImpliedContent().EdgeTypePropertyTypes()
-	if edgeTypePropertyTypes == nil {
-		return []*PropertyType{}, nil
+func (l *CreateGraphTypeListener) parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]string, []*PropertyType, error) {
+	impliedContent := ctx.EdgeTypeImpliedContent()
+	if impliedContent == nil {
+		return nil, nil, fmt.Errorf("error: missing implied content in edge type filler")
 	}
-	return l.parsePropertyTypesSpecification(edgeTypePropertyTypes.PropertyTypesSpecification())
+
+	labelSet := l.parseLabelSetPhrase(impliedContent.EdgeTypeLabelSet().LabelSetPhrase())
+
+	var propertyTypesSpec []*PropertyType
+	if edgeTypePropertyTypes := impliedContent.EdgeTypePropertyTypes(); edgeTypePropertyTypes != nil {
+		var err error
+		propertyTypesSpec, err = l.parsePropertyTypesSpecification(edgeTypePropertyTypes.PropertyTypesSpecification())
+		if err != nil {
+			return nil, nil, fmt.Errorf("error parsing edge type property types: %w", err)
+		}
+	}
+
+	return labelSet, propertyTypesSpec, nil
 }

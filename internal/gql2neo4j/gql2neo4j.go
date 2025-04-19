@@ -2,6 +2,7 @@ package gql2neo4j
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"strings"
@@ -42,6 +43,23 @@ func Convert(graphType *gql.GraphType, version string, apocEnabled bool) ([]neo4
 		label := nodeType.NodeTypeLabelSet[0] // TODO: support multiple labels
 
 		for _, prop := range nodeType.PropertyTypeSet {
+			if c, err := buildTypeConstraint(label, prop, version, apocEnabled); err != nil {
+				return nil, err
+			} else if c != nil {
+				schemaObjects = append(schemaObjects, c...)
+			}
+
+			if !prop.PropertyValueType.IsNullable() {
+				schemaObjects = append(schemaObjects, buildExistenceConstraint(label, prop.PropertyName))
+			}
+		}
+	}
+
+	for _, edgeType := range graphType.EdgeTypeSet {
+		log.Printf("edgeType: %#v\n", edgeType)
+		label := edgeType.EdgeTypeLabelSet[0] // TODO: support multiple labels
+
+		for _, prop := range edgeType.EdgeTypePropertySet {
 			if c, err := buildTypeConstraint(label, prop, version, apocEnabled); err != nil {
 				return nil, err
 			} else if c != nil {
