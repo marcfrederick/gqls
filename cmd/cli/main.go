@@ -10,12 +10,13 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
+	"github.com/marcfrederick/gqls/internal/web"
 )
 
 func main() {
 	app := &cli.Command{
 		Name:      "gqls",
-		Usage:     "ConvertString a GQL schema into Neo4j format",
+		Usage:     "Convert GQL schema into Neo4j format",
 		ArgsUsage: "[input]",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
@@ -35,6 +36,12 @@ func main() {
 				Name:        "apoc",
 				Usage:       "Generate APOC triggers",
 				DefaultText: "false",
+				Required:    false,
+			},
+			&cli.StringFlag{
+				Name:   "serve",
+				Usage:  "Start web server on the specified address (e.g., :8080)",
+				Hidden: true,
 			},
 		},
 		Action: run,
@@ -46,6 +53,12 @@ func main() {
 }
 
 func run(ctx context.Context, cmd *cli.Command) error {
+	// If serve flag is provided, start the web server
+	if addr := cmd.String("serve"); addr != "" {
+		return web.Serve(addr)
+	}
+
+	// Otherwise proceed with CLI conversion
 	inputPath := cmd.String("input")
 	content, err := readInput(inputPath)
 	if err != nil {

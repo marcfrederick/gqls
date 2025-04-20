@@ -101,7 +101,7 @@ func processProperties(label string, properties []*gql.PropertyType, opts Opts) 
 
 // buildTypeConstraint returns a property type constraint if the Neo4j version supports it.
 func buildTypeConstraint(label string, property *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
-	supported, err := isVersionSupported(opts.Neo4jVersion, "5.9")
+	supported, err := IsVersionSupported(opts.Neo4jVersion, "5.9")
 	if err != nil {
 		return nil, fmt.Errorf("version check failed: %w", err)
 	}
