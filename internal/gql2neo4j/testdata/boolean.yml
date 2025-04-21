@@ -1,0 +1,7 @@
+input: |-
+  CREATE PROPERTY GRAPH someGraphType {
+    (:Post { foo :: BOOL, bar :: BOOLEAN })
+  }
+want: |-
+  CREATE CONSTRAINT constraint_post_foo_type FOR (n:Post) REQUIRE n.foo IS :: BOOLEAN;
+  CREATE CONSTRAINT constraint_post_bar_type FOR (n:Post) REQUIRE n.bar IS :: BOOLEAN;

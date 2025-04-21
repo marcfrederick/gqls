@@ -1,0 +1,10 @@
+input: |-
+  CREATE PROPERTY GRAPH someGraphType {
+    (:Place { postcode :: CHAR(5) }),
+    (:Place)-[:CLOSE_TO { label :: CHAR(10) }]->(:Place)
+  }
+want: |-
+  CREATE CONSTRAINT constraint_place_postcode_type FOR (n:Place) REQUIRE n.postcode IS :: STRING;
+  CALL apoc.trigger.add("constraint_place_postcode_trigger", "UNWIND $createdNodes AS e WITH e WHERE e:Place AND e.postcode IS NOT NULL AND (size(e.postcode) < 5 OR size(e.postcode) > 5) CALL apoc.util.validate(true, 'postcode must be between 5 and 5 characters', [])", {phase: "before"});
+  CREATE CONSTRAINT constraint_close_to_label_type FOR (n:CLOSE_TO) REQUIRE n.label IS :: STRING;
+  CALL apoc.trigger.add("constraint_close_to_label_trigger", "UNWIND $createdRelationships AS e WITH e WHERE e:CLOSE_TO AND e.label IS NOT NULL AND (size(e.label) < 10 OR size(e.label) > 10) CALL apoc.util.validate(true, 'label must be between 10 and 10 characters', [])", {phase: "before"});

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GQL to Neo4j Converter</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/themes/prism.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo-container">
+        <img src="/static/assets/logo.png" alt="GQL to Neo4j Converter Logo" class="logo">
+      </div>
+      <h1>GQL to Neo4j Converter</h1>
+      <div class="settings">
+        <div class="setting">
+          <label for="neo4j-version">Neo4j Version:</label>
+          <input id="neo4j-version" type="text" value="latest" />
+        </div>
+        <div class="setting">
+          <label for="apoc-enabled">
+            <input type="checkbox" id="apoc-enabled" />
+            Enable APOC
+          </label>
+        </div>
+      </div>
+    </header>
+    <main>
+      <div class="editor-container">
+        <div class="editor-column">
+          <h2>GQL Input</h2>
+          <textarea id="gql-input" placeholder="Enter your GQL schema here..."></textarea>
+        </div>
+        <div class="editor-column">
+          <h2>Neo4j Output</h2>
+          <div id="error-message" class="error hidden"></div>
+          <pre><code id="neo4j-output" class="language-cypher">Neo4j conversion will appear here...</code></pre>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.30.0/components/prism-cypher.min.js"></script>
+  <script src="/static/script.js"></script>
+</body>
+</html>

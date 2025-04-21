@@ -1,0 +1,424 @@
+package gql
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
+
+	"github.com/marcfrederick/gqls/internal/gql/datatype"
+	"github.com/marcfrederick/gqls/internal/gql/parser"
+)
+
+// parseElementTypeSpecification parses the element type specification from the context.
+func parseElementTypeSpecification(elementTypeSpec parser.IElementTypeSpecificationContext, graphType *GraphType) error {
+	if nodeTypeSpec := elementTypeSpec.NodeTypeSpecification(); nodeTypeSpec != nil {
+		nodeType, err := parseNodeTypeSpecification(nodeTypeSpec)
+		if err != nil {
+			return fmt.Errorf("error parsing node type nodeType: %w", err)
+		}
+		graphType.NodeTypeSet = append(graphType.NodeTypeSet, nodeType)
+	}
+
+	if edgeTypeSpec := elementTypeSpec.EdgeTypeSpecification(); edgeTypeSpec != nil {
+		edgeType, err := parseEdgeTypeSpecification(edgeTypeSpec)
+		if err != nil {
+			return fmt.Errorf("error parsing edge type edgeType: %w", err)
+		}
+		graphType.EdgeTypeSet = append(graphType.EdgeTypeSet, edgeType)
+	}
+
+	return nil
+}
+
+// parseNodeTypeSpecification parses the node type specification from the context.
+func parseNodeTypeSpecification(ctx parser.INodeTypeSpecificationContext) (*NodeType, error) {
+	var nodeTypeFiller parser.INodeTypeFillerContext
+	var nodeTypeAlias parser.ILocalNodeTypeAliasContext
+
+	if nodeTypePattern := ctx.NodeTypePattern(); nodeTypePattern != nil {
+		nodeTypeFiller = nodeTypePattern.NodeTypeFiller()
+		nodeTypeAlias = nodeTypePattern.LocalNodeTypeAlias()
+	} else if nodeTypePhrase := ctx.NodeTypePhrase(); nodeTypePhrase != nil {
+		nodeTypeFiller = nodeTypePhrase.NodeTypePhraseFiller().NodeTypeFiller()
+		nodeTypeAlias = nodeTypePhrase.LocalNodeTypeAlias()
+	} else {
+		return nil, fmt.Errorf("error invalid node type specification: %s", ctx.GetText())
+	}
+
+	nodeType, err := parseNodeTypeFiller(nodeTypeFiller)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing node type filler: %w", err)
+	}
+
+	if nodeTypeAlias != nil {
+		nodeType.Alias = nodeTypeAlias.GetText()
+	}
+
+	return nodeType, nil
+}
+
+// parseNodeTypeFiller parses the node type filler from the context.
+func parseNodeTypeFiller(fillerContext parser.INodeTypeFillerContext) (*NodeType, error) {
+	impliedContent := fillerContext.NodeTypeImpliedContent()
+	if impliedContent == nil {
+		return nil, fmt.Errorf("error missing implied content in node type filler")
+	}
+
+	nodeTypePropertyTypes, err := parseNodeTypePropertyTypes(impliedContent.NodeTypePropertyTypes())
+	if err != nil {
+		return nil, fmt.Errorf("error parsing node type property types: %w", err)
+	}
+
+	return &NodeType{
+		NodeTypeLabelSet: parseLabelSetPhrase(impliedContent.NodeTypeLabelSet().LabelSetPhrase()),
+		PropertyTypeSet:  nodeTypePropertyTypes,
+	}, nil
+}
+
+// parseLabelSetPhrase parses the label set phrase from the context.
+func parseLabelSetPhrase(ctx parser.ILabelSetPhraseContext) []string {
+	labelNames := ctx.LabelSetSpecification().AllLabelName()
+
+	keyLabelSet := make([]string, 0, len(labelNames))
+	for _, label := range labelNames {
+		keyLabelSet = append(keyLabelSet, label.GetText())
+	}
+	return keyLabelSet
+}
+
+// parseNodeTypePropertyTypes parses the property types for a node type.
+func parseNodeTypePropertyTypes(ctx parser.INodeTypePropertyTypesContext) ([]*PropertyType, error) {
+	if ctx == nil {
+		return []*PropertyType{}, nil
+	}
+
+	spec, err := parsePropertyTypesSpecification(ctx.PropertyTypesSpecification())
+	if err != nil {
+		return nil, fmt.Errorf("error parsing node type property types: %w", err)
+	}
+	return spec, nil
+}
+
+// parsePropertyTypesSpecification parses the property types specification.
+func parsePropertyTypesSpecification(ctx parser.IPropertyTypesSpecificationContext) ([]*PropertyType, error) {
+	propertyTypes := ctx.PropertyTypeList().AllPropertyType()
+
+	propertyTypeSet := make([]*PropertyType, 0, len(propertyTypes))
+	for _, propertyType := range propertyTypes {
+		propertyValueType, err := parseValueType(propertyType)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing property value type: %w", err)
+		}
+
+		propertyTypeSet = append(propertyTypeSet, &PropertyType{
+			PropertyName:      propertyType.PropertyName().GetText(),
+			PropertyValueType: propertyValueType,
+		})
+	}
+	return propertyTypeSet, nil
+}
+
+// parseValueType parses the value type of a property.
+func parseValueType(ctx parser.IPropertyTypeContext) (datatype.Descriptor, error) {
+	propertyValueType := ctx.PropertyValueType()
+
+	predefinedTypeLabelCtx, ok := propertyValueType.ValueType().(*parser.PredefinedTypeLabelContext)
+	if !ok {
+		return nil, fmt.Errorf("error parsing value type: non-predefined types not supported")
+	}
+
+	// Handle predefined types with special handling
+	if predefinedType := predefinedTypeLabelCtx.PredefinedType(); predefinedType != nil {
+		if characterStringType := predefinedType.CharacterStringType(); characterStringType != nil {
+			return parseStringType(StringKindCharacterString, characterStringType)
+		} else if byteStringType := predefinedType.ByteStringType(); byteStringType != nil {
+			return parseStringType(StringKindByteString, byteStringType)
+		} else if numericType := predefinedType.NumericType(); numericType != nil {
+			return parseNumericType(numericType)
+		}
+	}
+
+	// Predefined types without special handling
+	valueType := propertyValueType.GetText()
+	notNull := strings.HasSuffix(valueType, "NOTNULL")
+	if notNull {
+		valueType = strings.TrimSuffix(valueType, "NOTNULL")
+	}
+	return &datatype.MiscellaneousDataTypeDescriptor{
+		Kind:     valueType,
+		Nullable: !notNull,
+	}, nil
+}
+
+// stringKind represents the kind of string type.
+type stringKind int
+
+const (
+	// StringKindCharacterString represents a character string type.
+	StringKindCharacterString stringKind = iota
+	// StringKindByteString represents a byte string type.
+	StringKindByteString
+)
+
+// stringType is an interface for string types.
+type stringType interface {
+	MinLength() parser.IMinLengthContext
+	MaxLength() parser.IMaxLengthContext
+	FixedLength() parser.IFixedLengthContext
+	NotNull() parser.INotNullContext
+}
+
+// parseStringType parses the string type from the context.
+func parseStringType(stringKind stringKind, stringType stringType) (datatype.Descriptor, error) {
+	var minLength, maxLength int
+	if stringType.MinLength() != nil {
+		minLength, _ = strconv.Atoi(stringType.MinLength().GetText())
+	}
+	if stringType.MaxLength() != nil {
+		maxLength, _ = strconv.Atoi(stringType.MaxLength().GetText())
+	}
+	if stringType.FixedLength() != nil {
+		minLength, _ = strconv.Atoi(stringType.FixedLength().GetText())
+		maxLength, _ = strconv.Atoi(stringType.FixedLength().GetText())
+	}
+
+	switch stringKind {
+	case StringKindCharacterString:
+		return &datatype.CharacterStringDataTypeDescriptor{
+			MinLength: minLength,
+			MaxLength: maxLength,
+			Nullable:  parseNotNull(stringType.NotNull()),
+		}, nil
+	case StringKindByteString:
+		return &datatype.ByteStringDataTypeDescriptor{
+			MinLength: minLength,
+			MaxLength: maxLength,
+			Nullable:  parseNotNull(stringType.NotNull()),
+		}, nil
+	}
+
+	panic("unreachable")
+}
+
+// parseNumericType parses the numeric type from the context.
+func parseNumericType(numericType parser.INumericTypeContext) (datatype.Descriptor, error) {
+	if exactNumericType := numericType.ExactNumericType(); exactNumericType != nil {
+		return parseExactNumericType(exactNumericType)
+	} else if approximateNumericType := numericType.ApproximateNumericType(); approximateNumericType != nil {
+		return parseApproximateNumericType(approximateNumericType)
+	}
+	panic("unreachable")
+}
+
+// parseExactNumericType parses an exact numeric type (e.g., INT8, INT16).
+func parseExactNumericType(ctx parser.IExactNumericTypeContext) (*datatype.NumericDataTypeDescriptor, error) {
+	if decimalExactNumericType := ctx.DecimalExactNumericType(); decimalExactNumericType != nil {
+		return nil, fmt.Errorf("decimal exact numeric type is not supported: %w", ErrNotImplemented)
+	} else if binaryExactNumericType := ctx.BinaryExactNumericType(); binaryExactNumericType != nil {
+		return parseBinaryExactNumericType(binaryExactNumericType)
+	}
+	panic("unreachable")
+}
+
+// parseBinaryExactNumericType parses the binary exact numeric type (e.g., INT8, INT16).
+func parseBinaryExactNumericType(ctx parser.IBinaryExactNumericTypeContext) (*datatype.NumericDataTypeDescriptor, error) {
+	if signedBinaryExactNumericType := ctx.SignedBinaryExactNumericType(); signedBinaryExactNumericType != nil {
+		var precision int
+		switch {
+		case signedBinaryExactNumericType.INT8() != nil:
+			precision = 7
+		case signedBinaryExactNumericType.INT16() != nil:
+			precision = 15
+		case signedBinaryExactNumericType.INT32() != nil:
+			precision = 31
+		case signedBinaryExactNumericType.INT64() != nil:
+			precision = 63
+		case signedBinaryExactNumericType.INT128() != nil:
+			precision = 127
+		case signedBinaryExactNumericType.INT256() != nil:
+			precision = 255
+		default:
+			// TODO: Handle REAL, FLOAT, and DOUBLE types
+			parsedPrecision, err := parseOptionalInt(signedBinaryExactNumericType.Precision())
+			if err != nil {
+				return nil, fmt.Errorf("error parsing precision: %w", err)
+			}
+			precision = parsedPrecision
+		}
+
+		return &datatype.NumericDataTypeDescriptor{
+			Kind:      datatype.NumericKindExact,
+			Radix:     datatype.RadixBinary,
+			Precision: precision,
+			Nullable:  parseNotNull(signedBinaryExactNumericType.NotNull()),
+		}, nil
+	} else if unsignedBinaryExactNumericType := ctx.UnsignedBinaryExactNumericType(); unsignedBinaryExactNumericType != nil {
+		return nil, fmt.Errorf("unsigned binary exact numeric type is not supported: %w", ErrNotImplemented)
+	}
+	panic("unreachable")
+}
+
+// parseApproximateNumericType parses the approximate numeric type (e.g., FLOAT16, FLOAT32).
+func parseApproximateNumericType(ctx parser.IApproximateNumericTypeContext) (*datatype.NumericDataTypeDescriptor, error) {
+	var precision int
+	switch {
+	case ctx.FLOAT16() != nil:
+		precision = 15
+	case ctx.FLOAT32() != nil:
+		precision = 31
+	case ctx.FLOAT64() != nil:
+		precision = 63
+	case ctx.FLOAT128() != nil:
+		precision = 127
+	case ctx.FLOAT256() != nil:
+		precision = 255
+	default:
+		// TODO: Handle SMALLINT, INTEGER, and BIGINT types
+		parsedPrecision, err := parseOptionalInt(ctx.Precision())
+		if err != nil {
+			return nil, fmt.Errorf("error parsing precision: %w", err)
+		}
+		precision = parsedPrecision
+	}
+
+	scale, err := parseOptionalInt(ctx.Scale())
+	if err != nil {
+		return nil, fmt.Errorf("error parsing scale: %w", err)
+	}
+
+	return &datatype.NumericDataTypeDescriptor{
+		Kind:      datatype.NumericKindFloat,
+		Radix:     datatype.RadixBinary,
+		Precision: precision,
+		Scale:     scale,
+		Nullable:  parseNotNull(ctx.NotNull()),
+	}, nil
+}
+
+// parseOptionalInt parses an optional integer value from a parser rule context.
+func parseOptionalInt(node antlr.ParserRuleContext) (int, error) {
+	if node == nil {
+		return 0, nil
+	}
+
+	// somewhat hacky, but avoids some more complex logic
+	value, err := strconv.Atoi(node.GetText())
+	if err != nil {
+		return 0, fmt.Errorf("error parsing integer value: %w", err)
+	}
+	return value, nil
+}
+
+// parseNotNull checks if the NOT NULL constraint is absent.
+func parseNotNull(notNullContext parser.INotNullContext) bool {
+	return notNullContext == nil || notNullContext.NOT() == nil
+}
+
+// parseEdgeTypeSpecification parses the edge type specification.
+func parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*EdgeType, error) {
+	if edgeTypePattern := ctx.EdgeTypePattern(); edgeTypePattern != nil {
+		edgeType, err := parseEdgeTypePattern(edgeTypePattern)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing edge type pattern: %w", err)
+		}
+		return edgeType, nil
+	} else if edgeTypePhrase := ctx.EdgeTypePhrase(); edgeTypePhrase != nil {
+		// edge type phrases work with aliases; they are not yet implemented
+		return nil, fmt.Errorf("error edge type phrase not yet implemented: %w", ErrNotImplemented)
+	}
+	panic("unreachable")
+}
+
+// parseEdgeTypePattern parses the edge type pattern.
+func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error) {
+	if directed := ctx.EdgeTypePatternDirected(); directed != nil {
+		if pointingRight := directed.EdgeTypePatternPointingRight(); pointingRight != nil {
+			return parseEdgeType(
+				EdgeKindDirected,
+				pointingRight.SourceNodeTypeReference(),
+				pointingRight.DestinationNodeTypeReference(),
+				pointingRight.ArcTypePointingRight().EdgeTypeFiller(),
+			)
+		} else if pointingLeft := directed.EdgeTypePatternPointingLeft(); pointingLeft != nil {
+			return parseEdgeType(
+				EdgeKindDirected,
+				pointingLeft.SourceNodeTypeReference(),
+				pointingLeft.DestinationNodeTypeReference(),
+				pointingLeft.ArcTypePointingLeft().EdgeTypeFiller(),
+			)
+		}
+		return nil, fmt.Errorf("error invalid directed edge type pattern: %s", ctx.GetText())
+	} else if undirected := ctx.EdgeTypePatternUndirected(); undirected != nil {
+		return parseEdgeType(
+			EdgeKindUndirected,
+			undirected.SourceNodeTypeReference(),
+			undirected.DestinationNodeTypeReference(),
+			undirected.ArcTypeUndirected().EdgeTypeFiller(),
+		)
+	}
+	return nil, fmt.Errorf("error invalid edge type pattern: %s", ctx.GetText())
+}
+
+// parseEdgeType parses the edge type from the context.
+func parseEdgeType(
+	edgeTypeKind EdgeKind,
+	sourceCtx parser.ISourceNodeTypeReferenceContext,
+	destCtx parser.IDestinationNodeTypeReferenceContext,
+	edgeTypeFillerCtx parser.IEdgeTypeFillerContext,
+) (*EdgeType, error) {
+	var err error
+
+	var source *NodeType
+	if nodeTypeAlias := sourceCtx.SourceNodeTypeAlias(); nodeTypeAlias != nil {
+		source = &NodeType{Alias: nodeTypeAlias.GetText()}
+	} else {
+		source, err = parseNodeTypeFiller(sourceCtx.NodeTypeFiller())
+		if err != nil {
+			return nil, fmt.Errorf("error parsing source node type: %w", err)
+		}
+	}
+
+	var destination *NodeType
+	if nodeTypeAlias := destCtx.DestinationNodeTypeAlias(); nodeTypeAlias != nil {
+		source = &NodeType{Alias: nodeTypeAlias.GetText()}
+	} else {
+		destination, err = parseNodeTypeFiller(destCtx.NodeTypeFiller())
+		if err != nil {
+			return nil, fmt.Errorf("error parsing destination node type: %w", err)
+		}
+	}
+
+	labelSet, propertySet, err := parseEdgeTypeFiller(edgeTypeFillerCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing property types specification: %w", err)
+	}
+
+	return &EdgeType{
+		Kind:                edgeTypeKind,
+		SourceNodeType:      source,
+		DestinationNodeType: destination,
+		EdgeTypeLabelSet:    labelSet,
+		EdgeTypePropertySet: propertySet,
+	}, nil
+}
+
+// parseEdgeTypeFiller parses the edge type filler.
+func parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]string, []*PropertyType, error) {
+	impliedContent := ctx.EdgeTypeImpliedContent()
+	if impliedContent == nil {
+		return nil, nil, fmt.Errorf("error: missing implied content in edge type filler")
+	}
+
+	var propertyTypesSpec []*PropertyType
+	if edgeTypePropertyTypes := impliedContent.EdgeTypePropertyTypes(); edgeTypePropertyTypes != nil {
+		var err error
+		propertyTypesSpec, err = parsePropertyTypesSpecification(edgeTypePropertyTypes.PropertyTypesSpecification())
+		if err != nil {
+			return nil, nil, fmt.Errorf("error parsing edge type property types: %w", err)
+		}
+	}
+
+	return parseLabelSetPhrase(impliedContent.EdgeTypeLabelSet().LabelSetPhrase()), propertyTypesSpec, nil
+}

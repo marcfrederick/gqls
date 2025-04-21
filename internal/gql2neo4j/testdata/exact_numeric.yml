@@ -1,0 +1,12 @@
+input: |-
+  CREATE PROPERTY GRAPH someGraphType {
+    (:Post { foo :: INT8, bar :: INT16, baz :: INT, qux :: INT(31) })
+  }
+want: |-
+  CREATE CONSTRAINT constraint_post_foo_type FOR (n:Post) REQUIRE n.foo IS :: INTEGER;
+  CALL apoc.trigger.add("constraint_post_foo_trigger", "UNWIND $createdNodes AS node WITH node WHERE node:Post AND node.foo IS NOT NULL AND (node.foo < -128 OR node.age > 127) CALL apoc.util.validate(true, 'foo must be between -128 and 127', [])", {phase: "before"});
+  CREATE CONSTRAINT constraint_post_bar_type FOR (n:Post) REQUIRE n.bar IS :: INTEGER;
+  CALL apoc.trigger.add("constraint_post_bar_trigger", "UNWIND $createdNodes AS node WITH node WHERE node:Post AND node.bar IS NOT NULL AND (node.bar < -32768 OR node.age > 32767) CALL apoc.util.validate(true, 'bar must be between -32768 and 32767', [])", {phase: "before"});
+  CREATE CONSTRAINT constraint_post_baz_type FOR (n:Post) REQUIRE n.baz IS :: INTEGER;
+  CREATE CONSTRAINT constraint_post_qux_type FOR (n:Post) REQUIRE n.qux IS :: INTEGER;
+  CALL apoc.trigger.add("constraint_post_qux_trigger", "UNWIND $createdNodes AS node WITH node WHERE node:Post AND node.qux IS NOT NULL AND (node.qux < -2147483648 OR node.age > 2147483647) CALL apoc.util.validate(true, 'qux must be between -2147483648 and 2147483647', [])", {phase: "before"});
