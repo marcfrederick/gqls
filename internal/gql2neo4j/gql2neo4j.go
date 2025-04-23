@@ -4,14 +4,12 @@ package gql2neo4j
 import (
 	"fmt"
 	"log"
-	"math"
 	"strings"
 
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
-	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
 )
 
 type entityType uint8
@@ -134,47 +132,30 @@ func buildTypeConstraint(t entityType, label string, property *gql.PropertyType,
 // buildExistenceConstraint constructs a non-null existence constraint.
 func buildExistenceConstraint(label, property string) *constraints.PropertyExistenceConstraint {
 	return &constraints.PropertyExistenceConstraint{
-		Name:         formatConstraintName("existence", label, property),
+		Name:         formatName("existence", label, property),
 		Pattern:      fmt.Sprintf("(n:%s)", label),
 		PropertyName: fmt.Sprintf("n.%s", property),
 	}
 }
 
 // createPropertyTypeConstraint maps the GQL type and builds a constraint.
-func createPropertyTypeConstraint(t entityType, label string, propertyType *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
+func createPropertyTypeConstraint(entityType entityType, label string, propertyType *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor:
 		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         formatConstraintName("type", label, propertyType.PropertyName),
+			Name:         formatName("type", label, propertyType.PropertyName),
 			Pattern:      fmt.Sprintf("(n:%s)", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
 			PropertyType: string(neo4j.String),
 		})
 		if opts.ApocEnabled && (valueType.MinLength != 0 || valueType.MaxLength != 0) {
-			var variable string
-			switch t {
-			case nodeEntityType:
-				variable = "$createdNodes"
-			case edgeEntityType:
-				variable = "$createdRelationships"
-			default:
-				panic("unknown entity type")
+			trigger, err := newStringLengthTrigger(entityType, label, propertyType.PropertyName, valueType.MinLength, valueType.MaxLength)
+			if err != nil {
+				return nil, fmt.Errorf("error creating string length trigger: %w", err)
 			}
-
-			schemaObjects = append(schemaObjects, &triggers.Trigger{
-				Name: formatConstraintName("trigger", label, propertyType.PropertyName),
-				KernelTransaction: fmt.Sprintf(
-					"UNWIND %[1]s AS e WITH e WHERE e:%[2]s AND e.%[3]s IS NOT NULL AND (size(e.%[3]s) < %[4]d OR size(e.%[3]s) > %[5]d) CALL apoc.util.validate(true, '%[3]s must be between %[4]d and %[5]d characters', [])",
-					variable,
-					label,
-					propertyType.PropertyName,
-					valueType.MinLength,
-					valueType.MaxLength,
-				),
-				Selector: triggers.Selector{Phase: triggers.Before},
-			})
+			schemaObjects = append(schemaObjects, trigger)
 		}
 	case *datatype.NumericDataTypeDescriptor:
 		if valueType.Precision >= 64 {
@@ -184,35 +165,27 @@ func createPropertyTypeConstraint(t entityType, label string, propertyType *gql.
 			return nil, fmt.Errorf("error Neo4j does not support scale for numeric types: %w", ErrUnsupported)
 		}
 
-		var t neo4j.PropertyType
+		var propertyT neo4j.PropertyType
 		switch valueType.Kind {
 		case datatype.NumericKindExact:
-			t = neo4j.Integer
+			propertyT = neo4j.Integer
 		case datatype.NumericKindFloat:
-			t = neo4j.Float
+			propertyT = neo4j.Float
 		}
 
 		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         formatConstraintName("type", label, propertyType.PropertyName),
+			Name:         formatName("type", label, propertyType.PropertyName),
 			Pattern:      fmt.Sprintf("(n:%s)", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
-			PropertyType: string(t),
+			PropertyType: string(propertyT),
 		})
 
 		if opts.ApocEnabled && valueType.Precision != 0 && valueType.Precision != 63 {
-			typeMin := -math.Pow(2, float64(valueType.Precision))
-			typeMax := math.Pow(2, float64(valueType.Precision)) - 1
-			schemaObjects = append(schemaObjects, &triggers.Trigger{
-				Name: formatConstraintName("trigger", label, propertyType.PropertyName),
-				KernelTransaction: fmt.Sprintf(
-					"UNWIND $createdNodes AS node WITH node WHERE node:%[1]s AND node.%[2]s IS NOT NULL AND (node.%[2]s < %.0[3]f OR node.age > %.0[4]f) CALL apoc.util.validate(true, '%[2]s must be between %.0[3]f and %.0[4]f', [])",
-					label,
-					propertyType.PropertyName,
-					typeMin,
-					typeMax,
-				),
-				Selector: triggers.Selector{Phase: triggers.Before},
-			})
+			trigger, err := newNumericRangeTrigger(entityType, label, propertyType.PropertyName, valueType.Precision)
+			if err != nil {
+				return nil, fmt.Errorf("error creating numeric range trigger: %w", err)
+			}
+			schemaObjects = append(schemaObjects, trigger)
 
 		}
 	case *datatype.MiscellaneousDataTypeDescriptor:
@@ -221,7 +194,7 @@ func createPropertyTypeConstraint(t entityType, label string, propertyType *gql.
 			return nil, fmt.Errorf("error mapping GQL type to Neo4j: %w", err)
 		}
 		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         formatConstraintName("type", label, propertyType.PropertyName),
+			Name:         formatName("type", label, propertyType.PropertyName),
 			Pattern:      fmt.Sprintf("(n:%s)", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
 			PropertyType: string(t),
@@ -235,8 +208,8 @@ func createPropertyTypeConstraint(t entityType, label string, propertyType *gql.
 	return schemaObjects, nil
 }
 
-// formatConstraintName standardizes constraint names.
-func formatConstraintName(kind, label, property string) string {
+// formatName standardizes constraint names.
+func formatName(kind, label, property string) string {
 	return strings.ToLower(fmt.Sprintf("constraint_%s_%s_%s", label, property, kind))
 }
 

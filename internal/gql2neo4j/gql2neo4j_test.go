@@ -38,11 +38,9 @@ func TestConvertString(t *testing.T) {
 				t.Fatalf("ConvertString() returned error: %v", err)
 			}
 
-			got = strings.TrimSpace(got)
 			want := strings.TrimSpace(tc.Want)
-			if got != want {
-				t.Errorf("ConvertString() got = %v, want %v", got, want)
-			}
+			got = strings.TrimSpace(got)
+			assert.Equal(t, want, got)
 		})
 	}
 }
@@ -109,13 +107,11 @@ func TestConvert(t *testing.T) {
 					PropertyName: "n.age",
 					PropertyType: "INTEGER",
 				},
-				&triggers.Trigger{
-					Name:              "constraint_person_age_trigger",
-					KernelTransaction: "UNWIND $createdNodes AS node WITH node WHERE node:Person AND node.age IS NOT NULL AND (node.age < -128 OR node.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', [])",
-					Selector: triggers.Selector{
-						Phase: triggers.Before,
-					},
-				},
+				triggers.NewTrigger(
+					"constraint_person_age_trigger",
+					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', [])",
+					triggers.Selector{Phase: triggers.Before},
+				),
 				&constraints.PropertyExistenceConstraint{
 					Name:         "constraint_person_age_existence",
 					Pattern:      "(n:Person)",
@@ -158,7 +154,7 @@ func TestConvert(t *testing.T) {
 				t.Errorf("Convert() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			assert.Equal(t, tt.want, got, "Convert() got = %v, want %v", got, tt.want)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

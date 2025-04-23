@@ -1,0 +1,7 @@
+{{- /*gotype: github.com/marcfrederick/gqls/internal/gql2neo4j.NumericRangeTriggerData*/ -}}
+UNWIND {{.Variable}} AS e
+WITH e
+WHERE e:{{.Label}}
+  AND e.{{.PropertyName}} IS NOT NULL
+  AND (e.{{.PropertyName}} < {{.MinValue}} OR e.{{.PropertyName}} > {{.MaxValue}})
+CALL apoc.util.validate(true, '{{.PropertyName}} must be between {{.MinValue}} and {{.MaxValue}}', [])

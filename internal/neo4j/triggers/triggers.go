@@ -3,7 +3,9 @@ package triggers
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/marcfrederick/gqls/internal/neo4j"
 )
@@ -31,8 +33,17 @@ type Selector struct {
 // Trigger represents a Neo4j APOC trigger.
 type Trigger struct {
 	Name              string
-	KernelTransaction string
 	Selector          Selector
+	kernelTransaction string
+}
+
+// NewTrigger creates a new Trigger instance.
+func NewTrigger(name, kernelTransaction string, selector Selector) *Trigger {
+	return &Trigger{
+		Name:              name,
+		kernelTransaction: normalizeKernelTransaction(kernelTransaction),
+		Selector:          selector,
+	}
 }
 
 var _ neo4j.SchemaObject = (*Trigger)(nil)
@@ -43,7 +54,17 @@ func (t *Trigger) CreateStatement() string {
 	return fmt.Sprintf(
 		"CALL apoc.trigger.add(%s, %s, %s)",
 		strconv.Quote(t.Name),
-		strconv.Quote(t.KernelTransaction),
+		strconv.Quote(t.kernelTransaction),
 		fmt.Sprintf("{phase: %s}", strconv.Quote(string(t.Selector.Phase))),
 	)
+}
+
+// whitespaceRegex is a compiled regular expression to match whitespace characters.
+var whitespaceRegex = regexp.MustCompile(`\s+`)
+
+// normalizeKernelTransaction normalizes a kernel transaction.
+func normalizeKernelTransaction(pattern string) string {
+	pattern = whitespaceRegex.ReplaceAllString(pattern, " ")
+	pattern = strings.TrimSpace(pattern)
+	return pattern
 }

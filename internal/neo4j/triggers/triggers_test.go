@@ -5,7 +5,7 @@ import "testing"
 func TestTrigger_CreateStatement(t *testing.T) {
 	trigger := &Trigger{
 		Name:              "some_name",
-		KernelTransaction: "FOO",
+		kernelTransaction: "FOO",
 		Selector:          Selector{Phase: After},
 	}
 

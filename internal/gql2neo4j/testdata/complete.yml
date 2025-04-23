@@ -7,7 +7,7 @@ input: |-
 want: |-
   CREATE CONSTRAINT constraint_person_name_type FOR (n:Person) REQUIRE n.name IS :: STRING;
   CREATE CONSTRAINT constraint_person_age_type FOR (n:Person) REQUIRE n.age IS :: INTEGER;
-  CALL apoc.trigger.add("constraint_person_age_trigger", "UNWIND $createdNodes AS node WITH node WHERE node:Person AND node.age IS NOT NULL AND (node.age < -128 OR node.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', [])", {phase: "before"});
+  CALL apoc.trigger.add("constraint_person_age_trigger", "UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', [])", {phase: "before"});
   CREATE CONSTRAINT constraint_is_friend_since_type FOR (n:is_friend) REQUIRE n.since IS :: DATE;
   CREATE CONSTRAINT constraint_is_friend_since_existence FOR (n:is_friend) REQUIRE n.since IS NOT NULL;
   CREATE CONSTRAINT constraint_is_friend_nickname_type FOR (n:is_friend) REQUIRE n.nickname IS :: STRING;
