@@ -27,4 +27,4 @@ changelog:
       - "^test:"
       - "^ci:"
       - "^build:"
-      - "^build(deps):"
+      - "^build\(deps\):"
