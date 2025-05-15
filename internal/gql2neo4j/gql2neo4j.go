@@ -85,7 +85,7 @@ func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) 
 		}
 		label := edgeType.EdgeTypeLabelSet[0]
 
-		edgeTypeObjects, err := processEdgeType(label, edgeType)
+		edgeTypeObjects, err := processEdgeType(label, edgeType, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error processing edge type: %w", err)
 		}
@@ -102,7 +102,11 @@ func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) 
 }
 
 // processEdgeType processes the edge type and returns the corresponding Neo4j schema objects.
-func processEdgeType(label string, edgeType *gql.EdgeType) ([]neo4j.SchemaObject, error) {
+func processEdgeType(label string, edgeType *gql.EdgeType, opts Opts) ([]neo4j.SchemaObject, error) {
+	if !opts.ApocEnabled {
+		return []neo4j.SchemaObject{}, nil
+	}
+
 	sourceLabelSet := edgeType.SourceNodeType.NodeTypeLabelSet
 	if len(sourceLabelSet) != 1 {
 		return nil, fmt.Errorf("error Neo4j only supports one label per source node type: %w", ErrUnsupported)
