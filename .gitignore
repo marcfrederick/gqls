@@ -1,4 +1,5 @@
 *.iml
 .idea/
+dist/
 go.work
 gqls

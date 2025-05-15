@@ -1,5 +1,6 @@
 [tools]
 golangci-lint = "latest"
+goreleaser = "latest"
 pre-commit = "latest"
 
 [tasks.clean]
