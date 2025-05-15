@@ -6,5 +6,6 @@ input: |-
 want: |-
   CREATE CONSTRAINT constraint_place_postcode_type FOR (n:Place) REQUIRE n.postcode IS :: STRING;
   CALL apoc.trigger.add("constraint_place_postcode_trigger", "UNWIND $createdNodes AS e WITH e WHERE e:Place AND e.postcode IS NOT NULL AND (size(e.postcode) < 5 OR size(e.postcode) > 5) CALL apoc.util.validate(true, 'postcode must be between 5 and 5 characters', [])", {phase: "before"});
+  CALL apoc.trigger.add("constraint_edge_endpoint_close_to_place_place_trigger", "UNWIND $createdRelationships AS rel WITH rel WHERE type(rel) = \"CLOSE_TO\" AND NOT (startNode(rel):Place AND endNode(rel):Place) CALL apoc.util.validate( true, \"CLOSE_TO relationship must be between Place and Place\", [] ) RETURN null", {phase: "before"});
   CREATE CONSTRAINT constraint_close_to_label_type FOR (n:CLOSE_TO) REQUIRE n.label IS :: STRING;
   CALL apoc.trigger.add("constraint_close_to_label_trigger", "UNWIND $createdRelationships AS e WITH e WHERE e:CLOSE_TO AND e.label IS NOT NULL AND (size(e.label) < 10 OR size(e.label) > 10) CALL apoc.util.validate(true, 'label must be between 10 and 10 characters', [])", {phase: "before"});

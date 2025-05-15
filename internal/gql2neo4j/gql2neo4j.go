@@ -85,14 +85,42 @@ func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) 
 		}
 		label := edgeType.EdgeTypeLabelSet[0]
 
-		objects, err := processProperties(edgeEntityType, label, edgeType.EdgeTypePropertySet, opts)
+		edgeTypeObjects, err := processEdgeType(label, edgeType)
+		if err != nil {
+			return nil, fmt.Errorf("error processing edge type: %w", err)
+		}
+		schemaObjects = append(schemaObjects, edgeTypeObjects...)
+
+		propertyObjects, err := processProperties(edgeEntityType, label, edgeType.EdgeTypePropertySet, opts)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
-		schemaObjects = append(schemaObjects, objects...)
+		schemaObjects = append(schemaObjects, propertyObjects...)
 	}
 
 	return schemaObjects, nil
+}
+
+// processEdgeType processes the edge type and returns the corresponding Neo4j schema objects.
+func processEdgeType(label string, edgeType *gql.EdgeType) ([]neo4j.SchemaObject, error) {
+	sourceLabelSet := edgeType.SourceNodeType.NodeTypeLabelSet
+	if len(sourceLabelSet) != 1 {
+		return nil, fmt.Errorf("error Neo4j only supports one label per source node type: %w", ErrUnsupported)
+	}
+	startNodeType := sourceLabelSet[0]
+
+	destinationLabelSet := edgeType.DestinationNodeType.NodeTypeLabelSet
+	if len(destinationLabelSet) != 1 {
+		return nil, fmt.Errorf("error Neo4j only supports one label per destination node type: %w", ErrUnsupported)
+	}
+	endNodeType := destinationLabelSet[0]
+
+	edgeEndpointTrigger, err := newEdgeEndpointTrigger(label, startNodeType, endNodeType)
+	if err != nil {
+		return nil, fmt.Errorf("error creating edge endpoint trigger: %w", err)
+	}
+
+	return []neo4j.SchemaObject{edgeEndpointTrigger}, nil
 }
 
 // processProperties processes properties for a given label and version.

@@ -76,6 +76,28 @@ func entityTypeToVariable(entityType entityType) string {
 	panic("unreachable")
 }
 
+// EdgeEndpointTriggerData holds the data for an edge endpoint trigger.
+type EdgeEndpointTriggerData struct {
+	RelationshipType string
+	StartNodeType    string
+	EndNodeType      string
+}
+
+// newEdgeEndpointTrigger creates a new edge endpoint trigger.
+func newEdgeEndpointTrigger(relationshipType, startNodeType, endNodeType string) (*triggers.Trigger, error) {
+	kernelTransaction, err := renderTemplate("edge_endpoint_trigger.cypher.tmpl", EdgeEndpointTriggerData{
+		RelationshipType: relationshipType,
+		StartNodeType:    startNodeType,
+		EndNodeType:      endNodeType,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error rendering template: %w", err)
+	}
+
+	triggerName := formatName("trigger", "edge_endpoint", fmt.Sprintf("%s_%s_%s", relationshipType, startNodeType, endNodeType))
+	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
+}
+
 // renderTemplate renders a template with the given data.
 //
 // It reads the template file from the embedded filesystem, parses it, and
