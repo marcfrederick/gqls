@@ -26,3 +26,8 @@ run = "golangci-lint run ./... && go tool go-check-sumtype $(go list ./... | gre
 description = "Run tests"
 depends = ["generate"]
 run = "go test ./..."
+
+[tasks.test-all]
+description = "Run integration tests"
+depends = ["generate"]
+run = "go test -tags=integration ./... -v"

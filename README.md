@@ -118,6 +118,27 @@ Run unit tests using:
 mise run test
 ```
 
+To run all tests, including integration tests, use:
+
+```bash
+mise run test-all
+```
+
+You need to have either `docker` or `podman` installed to run the integration tests.
+
+#### Docker setup
+
+When using Docker, no additional configuration is needed. Integration tests will work out of the box.
+
+#### Podman setup
+
+When using Podman, make sure to use a rootfull container and set the following environment variables:
+
+```bash
+export TESTCONTAINERS_DRIVER="podman"
+export TESTCONTAINERS_RYUK_CONTAINER_PRIVILEGED="true"
+```
+
 ### Contributing
 
 1. Fork the repository.
