@@ -16,21 +16,24 @@ var templates embed.FS
 
 // NumericRangeTriggerData holds the data for a numeric range trigger.
 type NumericRangeTriggerData struct {
-	Variable     string
-	Label        string
-	PropertyName string
-	MinValue     int
-	MaxValue     int
+	CreatedVariable            string
+	AssignedPropertiesVariable string
+	Label                      string
+	PropertyName               string
+	MinValue                   int
+	MaxValue                   int
 }
 
 // newNumericRangeTrigger creates a new numeric range trigger.
 func newNumericRangeTrigger(entityType entityType, label, propertyName string, precision int) (*triggers.Trigger, error) {
+	createdVariable, assignedPropertiesVariable := entityTypeToVariables(entityType)
 	kernelTransaction, err := renderTemplate("numeric_range_trigger.cypher.tmpl", NumericRangeTriggerData{
-		Variable:     entityTypeToVariable(entityType),
-		Label:        label,
-		PropertyName: propertyName,
-		MinValue:     -int(math.Pow(2, float64(precision))),
-		MaxValue:     int(math.Pow(2, float64(precision))) - 1,
+		CreatedVariable:            createdVariable,
+		AssignedPropertiesVariable: assignedPropertiesVariable,
+		Label:                      label,
+		PropertyName:               propertyName,
+		MinValue:                   -int(math.Pow(2, float64(precision))),
+		MaxValue:                   int(math.Pow(2, float64(precision))) - 1,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error rendering template: %w", err)
@@ -42,21 +45,24 @@ func newNumericRangeTrigger(entityType entityType, label, propertyName string, p
 
 // StringLengthTriggerData holds the data for a string length trigger.
 type StringLengthTriggerData struct {
-	Variable     string
-	Label        string
-	PropertyName string
-	MinLength    int
-	MaxLength    int
+	CreatedVariable            string
+	AssignedPropertiesVariable string
+	Label                      string
+	PropertyName               string
+	MinLength                  int
+	MaxLength                  int
 }
 
 // newStringLengthTrigger creates a new string length trigger.
 func newStringLengthTrigger(entityType entityType, label, propertyName string, minLength, maxLength int) (*triggers.Trigger, error) {
+	createdVariable, assignedPropertiesVariable := entityTypeToVariables(entityType)
 	kernelTransaction, err := renderTemplate("string_length_trigger.cypher.tmpl", StringLengthTriggerData{
-		Variable:     entityTypeToVariable(entityType),
-		Label:        label,
-		PropertyName: propertyName,
-		MinLength:    minLength,
-		MaxLength:    maxLength,
+		CreatedVariable:            createdVariable,
+		AssignedPropertiesVariable: assignedPropertiesVariable,
+		Label:                      label,
+		PropertyName:               propertyName,
+		MinLength:                  minLength,
+		MaxLength:                  maxLength,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error rendering template: %w", err)
@@ -66,12 +72,12 @@ func newStringLengthTrigger(entityType entityType, label, propertyName string, m
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }
 
-func entityTypeToVariable(entityType entityType) string {
+func entityTypeToVariables(entityType entityType) (string, string) {
 	switch entityType {
 	case nodeEntityType:
-		return "$createdNodes"
+		return "$createdNodes", "$assignedNodeProperties"
 	case edgeEntityType:
-		return "$createdRelationships"
+		return "$createdRelationships", "$assignedRelationshipProperties"
 	}
 	panic("unreachable")
 }

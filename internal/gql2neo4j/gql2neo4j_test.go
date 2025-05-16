@@ -109,7 +109,7 @@ func TestConvert(t *testing.T) {
 				},
 				triggers.NewTrigger(
 					"constraint_person_age_trigger",
-					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', [])",
+					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null UNION UNWIND keys($assignedNodeProperties) AS prop UNWIND $assignedNodeProperties[prop] AS change WITH change WHERE change:Person AND change.age IS NOT NULL AND (change.age < -128 OR change.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null",
 					triggers.Selector{Phase: triggers.Before},
 				),
 				&constraints.PropertyExistenceConstraint{
