@@ -1,3 +1,0 @@
-[submodule "internal/gql/grammar"]
-	path = internal/gql/grammar
-	url = git@github.com:opengql/grammar.git
