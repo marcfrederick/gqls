@@ -112,12 +112,42 @@ func parsePropertyTypesSpecification(ctx parser.IPropertyTypesSpecificationConte
 			return nil, fmt.Errorf("error parsing property value type: %w", err)
 		}
 
+		extendedAttributes, err := parseExtendedAttributes(propertyType)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing extended attributes: %w", err)
+		}
+
 		propertyTypeSet = append(propertyTypeSet, &PropertyType{
-			PropertyName:      propertyType.PropertyName().GetText(),
-			PropertyValueType: propertyValueType,
+			PropertyName:       propertyType.PropertyName().GetText(),
+			PropertyValueType:  propertyValueType,
+			ExtendedAttributes: extendedAttributes,
 		})
 	}
 	return propertyTypeSet, nil
+}
+
+func parseExtendedAttributes(ctx parser.IPropertyTypeContext) (*ExtendedPropertyAttributes, error) {
+	propertyValueType := ctx.PropertyValueType()
+	if propertyValueType == nil {
+		return nil, fmt.Errorf("error parsing extended attributes: missing property value type")
+	}
+
+	var checkConstraint *string
+	switch allCheckConstraints := propertyValueType.AllCheckConstraint(); len(allCheckConstraints) {
+	case 0:
+		// No check constraints
+	case 1:
+		searchCondition := allCheckConstraints[0].SearchCondition().GetText()
+		checkConstraint = &searchCondition
+	default:
+		return nil, fmt.Errorf("error parsing extended attributes: multiple check constraints not supported")
+	}
+
+	return &ExtendedPropertyAttributes{
+		IsPrimaryKey:    len(propertyValueType.AllPrimaryKey()) > 0,
+		IsUnique:        len(propertyValueType.AllUNIQUE()) > 0,
+		CheckConstraint: checkConstraint,
+	}, nil
 }
 
 // parseValueType parses the value type of a property.

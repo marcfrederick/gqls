@@ -1051,6 +1051,12 @@ type GQLListener interface {
 	// EnterPropertyType is called when entering the propertyType production.
 	EnterPropertyType(c *PropertyTypeContext)
 
+	// EnterPrimaryKey is called when entering the primaryKey production.
+	EnterPrimaryKey(c *PrimaryKeyContext)
+
+	// EnterCheckConstraint is called when entering the checkConstraint production.
+	EnterCheckConstraint(c *CheckConstraintContext)
+
 	// EnterPropertyValueType is called when entering the propertyValueType production.
 	EnterPropertyValueType(c *PropertyValueTypeContext)
 
@@ -2880,6 +2886,12 @@ type GQLListener interface {
 
 	// ExitPropertyType is called when exiting the propertyType production.
 	ExitPropertyType(c *PropertyTypeContext)
+
+	// ExitPrimaryKey is called when exiting the primaryKey production.
+	ExitPrimaryKey(c *PrimaryKeyContext)
+
+	// ExitCheckConstraint is called when exiting the checkConstraint production.
+	ExitCheckConstraint(c *CheckConstraintContext)
 
 	// ExitPropertyValueType is called when exiting the propertyValueType production.
 	ExitPropertyValueType(c *PropertyValueTypeContext)

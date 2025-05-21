@@ -1,3 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2025 Michael Burbidge and Contributors
+// SPDX-FileContributor: 2025 Marc Trölitzsch
+//
+// --------------------------- MODIFICATIONS ----------------------------------
+// This file was modified from the original upstream version.
+//   * All changes are surrounded by comments containing the string "MODIFIED".
+//   * Original upstream version: commit 8ab19da on 2025-03-01.
+// ----------------------------------------------------------------------------
+
 grammar GQL;
 
 options { caseInsensitive = true; }
@@ -1704,9 +1714,23 @@ propertyType
 
 // 18.7 <property value type>
 
+// BEGIN MODIFIED
+CHECK: 'CHECK';
+PRIMARY: 'PRIMARY';
+KEY: 'KEY';
+
+primaryKey
+  : PRIMARY KEY
+  ;
+
+checkConstraint
+  : CHECK '(' searchCondition ')'
+  ;
+
 propertyValueType
-    : valueType
+    : valueType (UNIQUE | primaryKey | checkConstraint)*
     ;
+// END MODIFIED
 
 // 18.8 <binding table type>
 

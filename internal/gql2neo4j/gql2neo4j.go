@@ -138,8 +138,33 @@ func processProperties(t entityType, label string, properties []*gql.PropertyTyp
 		}
 		schemaObjects = append(schemaObjects, typeConstraints...)
 
+		// FIXME: Properly handle constraints on edges not just nodes
 		if !prop.PropertyValueType.IsNullable() {
-			schemaObjects = append(schemaObjects, buildExistenceConstraint(label, prop.PropertyName))
+			schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
+				Name:         mustFormatName("existence", label, prop.PropertyName),
+				Pattern:      fmt.Sprintf("(n:%s)", label),
+				PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
+			})
+		}
+
+		if extendedAttrs := prop.ExtendedAttributes; extendedAttrs != nil {
+			if extendedAttrs.IsPrimaryKey {
+				schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
+					Name:         mustFormatName("primary_key", label, prop.PropertyName),
+					Pattern:      fmt.Sprintf("(n:%s)", label),
+					PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
+				})
+			}
+			if extendedAttrs.IsUnique {
+				schemaObjects = append(schemaObjects, &constraints.PropertyUniquenessConstraint{
+					Name:         mustFormatName("unique", label, prop.PropertyName),
+					Pattern:      fmt.Sprintf("(n:%s)", label),
+					PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
+				})
+			}
+			// TODO: Implement check constraints
+			// if extendedAttrs.CheckConstraint != nil {
+			// }
 		}
 	}
 
@@ -159,15 +184,6 @@ func buildTypeConstraint(t entityType, label string, property *gql.PropertyType,
 
 	// TODO: Technically we can create APOC triggers on older versions
 	return createPropertyTypeConstraint(t, label, property, opts)
-}
-
-// buildExistenceConstraint constructs a non-null existence constraint.
-func buildExistenceConstraint(label, property string) *constraints.PropertyExistenceConstraint {
-	return &constraints.PropertyExistenceConstraint{
-		Name:         mustFormatName("existence", label, property),
-		Pattern:      fmt.Sprintf("(n:%s)", label),
-		PropertyName: fmt.Sprintf("n.%s", property),
-	}
 }
 
 // createPropertyTypeConstraint maps the GQL type and builds a constraint.

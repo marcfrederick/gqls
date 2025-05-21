@@ -2,10 +2,18 @@ package gql
 
 import "github.com/marcfrederick/gqls/internal/gql/datatype"
 
+// ExtendedPropertyAttributes represents extended property attributes.
+type ExtendedPropertyAttributes struct {
+	IsPrimaryKey    bool
+	IsUnique        bool
+	CheckConstraint *string
+}
+
 // PropertyType represents a property type.
 type PropertyType struct {
-	PropertyName      string
-	PropertyValueType datatype.Descriptor
+	PropertyName       string
+	PropertyValueType  datatype.Descriptor
+	ExtendedAttributes *ExtendedPropertyAttributes
 }
 
 // NodeType represents a node type.

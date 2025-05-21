@@ -2226,6 +2226,18 @@ func (s *BaseGQLListener) EnterPropertyType(ctx *PropertyTypeContext) {}
 // ExitPropertyType is called when production propertyType is exited.
 func (s *BaseGQLListener) ExitPropertyType(ctx *PropertyTypeContext) {}
 
+// EnterPrimaryKey is called when production primaryKey is entered.
+func (s *BaseGQLListener) EnterPrimaryKey(ctx *PrimaryKeyContext) {}
+
+// ExitPrimaryKey is called when production primaryKey is exited.
+func (s *BaseGQLListener) ExitPrimaryKey(ctx *PrimaryKeyContext) {}
+
+// EnterCheckConstraint is called when production checkConstraint is entered.
+func (s *BaseGQLListener) EnterCheckConstraint(ctx *CheckConstraintContext) {}
+
+// ExitCheckConstraint is called when production checkConstraint is exited.
+func (s *BaseGQLListener) ExitCheckConstraint(ctx *CheckConstraintContext) {}
+
 // EnterPropertyValueType is called when production propertyValueType is entered.
 func (s *BaseGQLListener) EnterPropertyValueType(ctx *PropertyValueTypeContext) {}
 
