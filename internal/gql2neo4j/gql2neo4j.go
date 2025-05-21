@@ -138,11 +138,19 @@ func processProperties(t entityType, label string, properties []*gql.PropertyTyp
 		}
 		schemaObjects = append(schemaObjects, typeConstraints...)
 
+		var pattern string
+		switch t {
+		case nodeEntityType:
+			pattern = fmt.Sprintf("(n:%s)", label)
+		case edgeEntityType:
+			pattern = fmt.Sprintf("(n:%s)", label)
+		}
+
 		// FIXME: Properly handle constraints on edges not just nodes
 		if !prop.PropertyValueType.IsNullable() {
 			schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
 				Name:         mustFormatName("existence", label, prop.PropertyName),
-				Pattern:      fmt.Sprintf("(n:%s)", label),
+				Pattern:      pattern,
 				PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
 			})
 		}
@@ -151,14 +159,14 @@ func processProperties(t entityType, label string, properties []*gql.PropertyTyp
 			if extendedAttrs.IsPrimaryKey {
 				schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
 					Name:         mustFormatName("primary_key", label, prop.PropertyName),
-					Pattern:      fmt.Sprintf("(n:%s)", label),
+					Pattern:      pattern,
 					PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
 				})
 			}
 			if extendedAttrs.IsUnique {
 				schemaObjects = append(schemaObjects, &constraints.PropertyUniquenessConstraint{
 					Name:         mustFormatName("unique", label, prop.PropertyName),
-					Pattern:      fmt.Sprintf("(n:%s)", label),
+					Pattern:      pattern,
 					PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
 				})
 			}
