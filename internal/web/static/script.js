@@ -1,3 +1,6 @@
+// BEGIN AI SECTION
+// @ai-generated model="claude-3-7-sonnet-20250219"
+
 document.addEventListener('DOMContentLoaded', () => {
     const gqlInput = document.getElementById('gql-input');
     const neo4jOutput = document.getElementById('neo4j-output');
@@ -62,3 +65,5 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+// END AI SECTION

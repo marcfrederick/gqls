@@ -50,10 +50,13 @@ func main() {
 				Usage:       "Generate APOC triggers",
 				DefaultText: "false",
 			},
+			// BEGIN AI SECTION
+			// @ai-generated model="claude-3-7-sonnet-20250219"
 			&cli.StringFlag{
 				Name:  "serve",
 				Usage: "Start web server on the specified address (e.g., :8080)",
 			},
+			// END AI SECTION
 		},
 		Action: run,
 	}
@@ -64,9 +67,12 @@ func main() {
 }
 
 func run(_ context.Context, cmd *cli.Command) error {
+	// BEGIN AI SECTION
+	// @ai-generated model="claude-3-7-sonnet-20250219"
 	if addr := cmd.String("serve"); addr != "" {
 		return web.Serve(addr)
 	}
+	// END AI SECTION
 
 	inputPath := cmd.String("input")
 	content, err := readInput(inputPath)

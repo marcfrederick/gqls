@@ -1,6 +1,8 @@
-// Package web provides a simple web server to serve the conversion tool
-// and handle conversion requests.
+// Package web provides a web server for converting GQL schemas to Neo4j format.
 package web
+
+// BEGIN AI SECTION
+// @ai-generated model="claude-3-7-sonnet-20250219"
 
 import (
 	"embed"
@@ -104,3 +106,5 @@ func Serve(addr string) error {
 	}
 	return server.ListenAndServe()
 }
+
+// END AI SECTION

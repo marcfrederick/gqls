@@ -1,3 +1,6 @@
+/* BEGIN AI SECTION */
+/* @ai-generated model="claude-3-7-sonnet-20250219" */
+
 :root {
     --primary-color: #4a90e2;
     --secondary-color: #2c3e50;
@@ -212,3 +215,5 @@ pre[class*="language-"] {
 .style .token.string {
     background: transparent;
 }
+
+/* END AI SECTION */
