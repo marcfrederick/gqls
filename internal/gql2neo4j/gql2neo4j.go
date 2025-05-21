@@ -164,7 +164,7 @@ func buildTypeConstraint(t entityType, label string, property *gql.PropertyType,
 // buildExistenceConstraint constructs a non-null existence constraint.
 func buildExistenceConstraint(label, property string) *constraints.PropertyExistenceConstraint {
 	return &constraints.PropertyExistenceConstraint{
-		Name:         formatName("existence", label, property),
+		Name:         mustFormatName("existence", label, property),
 		Pattern:      fmt.Sprintf("(n:%s)", label),
 		PropertyName: fmt.Sprintf("n.%s", property),
 	}
@@ -177,7 +177,7 @@ func createPropertyTypeConstraint(entityType entityType, label string, propertyT
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor:
 		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         formatName("type", label, propertyType.PropertyName),
+			Name:         mustFormatName("type", label, propertyType.PropertyName),
 			Pattern:      fmt.Sprintf("(n:%s)", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
 			PropertyType: string(neo4j.String),
@@ -206,7 +206,7 @@ func createPropertyTypeConstraint(entityType entityType, label string, propertyT
 		}
 
 		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         formatName("type", label, propertyType.PropertyName),
+			Name:         mustFormatName("type", label, propertyType.PropertyName),
 			Pattern:      fmt.Sprintf("(n:%s)", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
 			PropertyType: string(propertyT),
@@ -226,7 +226,7 @@ func createPropertyTypeConstraint(entityType entityType, label string, propertyT
 			return nil, fmt.Errorf("error mapping GQL type to Neo4j: %w", err)
 		}
 		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         formatName("type", label, propertyType.PropertyName),
+			Name:         mustFormatName("type", label, propertyType.PropertyName),
 			Pattern:      fmt.Sprintf("(n:%s)", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
 			PropertyType: string(t),
@@ -240,9 +240,24 @@ func createPropertyTypeConstraint(entityType entityType, label string, propertyT
 	return schemaObjects, nil
 }
 
-// formatName standardizes constraint names.
-func formatName(kind, label, property string) string {
-	return strings.ToLower(fmt.Sprintf("constraint_%s_%s_%s", label, property, kind))
+// mustFormatName formats the name of a constraint or trigger.
+func mustFormatName(prefix string, components ...string) string {
+	if len(components) == 0 {
+		panic("mustFormatName requires at least one component")
+	}
+
+	var b strings.Builder
+	b.WriteString(prefix)
+	b.WriteString("_")
+
+	for i, component := range components {
+		if i > 0 {
+			b.WriteString("_")
+		}
+		b.WriteString(component)
+	}
+
+	return strings.ToLower(b.String())
 }
 
 // mapMiscGQLTypeToNeo4j handles miscellaneous GQL types.

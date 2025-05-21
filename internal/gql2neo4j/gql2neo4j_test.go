@@ -96,24 +96,24 @@ func TestConvert(t *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.PropertyTypeConstraint{
-					Name:         "constraint_person_name_type",
+					Name:         "type_person_name",
 					Pattern:      "(n:Person)",
 					PropertyName: "n.name",
 					PropertyType: "STRING",
 				},
 				&constraints.PropertyTypeConstraint{
-					Name:         "constraint_person_age_type",
+					Name:         "type_person_age",
 					Pattern:      "(n:Person)",
 					PropertyName: "n.age",
 					PropertyType: "INTEGER",
 				},
 				triggers.NewTrigger(
-					"constraint_person_age_trigger",
+					"numeric_range_person_age",
 					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null UNION UNWIND keys($assignedNodeProperties) AS prop UNWIND $assignedNodeProperties[prop] AS change WITH change WHERE change:Person AND change.age IS NOT NULL AND (change.age < -128 OR change.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null",
 					triggers.Selector{Phase: triggers.Before},
 				),
 				&constraints.PropertyExistenceConstraint{
-					Name:         "constraint_person_age_existence",
+					Name:         "existence_person_age",
 					Pattern:      "(n:Person)",
 					PropertyName: "n.age",
 				},

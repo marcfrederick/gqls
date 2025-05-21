@@ -39,7 +39,7 @@ func newNumericRangeTrigger(entityType entityType, label, propertyName string, p
 		return nil, fmt.Errorf("error rendering template: %w", err)
 	}
 
-	triggerName := formatName("trigger", label, propertyName)
+	triggerName := mustFormatName("numeric_range", label, propertyName)
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }
 
@@ -68,7 +68,7 @@ func newStringLengthTrigger(entityType entityType, label, propertyName string, m
 		return nil, fmt.Errorf("error rendering template: %w", err)
 	}
 
-	triggerName := formatName("trigger", label, propertyName)
+	triggerName := mustFormatName("string_length", label, propertyName)
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }
 
@@ -100,7 +100,7 @@ func newEdgeEndpointTrigger(relationshipType, startNodeType, endNodeType string)
 		return nil, fmt.Errorf("error rendering template: %w", err)
 	}
 
-	triggerName := formatName("trigger", "edge_endpoint", fmt.Sprintf("%s_%s_%s", relationshipType, startNodeType, endNodeType))
+	triggerName := mustFormatName("edge_endpoint", relationshipType, startNodeType, endNodeType)
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }
 
