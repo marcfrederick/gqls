@@ -15,11 +15,17 @@ import (
 	"github.com/marcfrederick/gqls/internal/web"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+)
+
 func main() {
 	app := &cli.Command{
 		Name:      "gqls",
 		Usage:     "Convert a GQL schema into Neo4j format",
 		ArgsUsage: "[input]",
+		Version:   fmt.Sprintf("%s (%s)", version, commit),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "input",

@@ -72,7 +72,7 @@ GQLS is a CLI tool that converts GQL schema definitions (ISO/IEC 39075:2024) int
 ```shell
 git clone https://github.com/marcfrederick/gqls.git
 cd gqls
-mise run build
+make build
 ```
 
 ### Generate the Parser
@@ -80,10 +80,12 @@ mise run build
 Before building, generate the ANTLR4 parser files:
 
 ```shell
-mise run generate
+make generate
 ```
 
-This will populate the `parser/` directory with Go bindings for the GQL grammar.
+This will populate the `internal/gql/grammar/` directory with Go bindings for the GQL grammar.
+You must have a valid Java Runtime (JRE) installed and available in your `$PATH` for this step.
+Make will automatically download the required ANTLR4 jar file if it is not already present.
 
 ## Usage
 
@@ -107,7 +109,7 @@ Run the `gqls` command with the required options:
 This project uses `golangci-lint` for linting. Run the following command to check for linting issues:
 
 ```bash
-mise run lint
+make lint
 ```
 
 ### Testing
@@ -115,13 +117,13 @@ mise run lint
 Run unit tests using:
 
 ```bash
-mise run test
+make test
 ```
 
 To run all tests, including integration tests, use:
 
 ```bash
-mise run test-all
+make test-all
 ```
 
 You need to have either `docker` or `podman` installed to run the integration tests.

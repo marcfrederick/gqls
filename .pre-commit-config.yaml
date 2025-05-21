@@ -13,17 +13,17 @@ repos:
     hooks:
       - id: generate
         name: Generate
-        entry: mise run generate
+        entry: make generate
         language: system
         files: ^internal/gql/grammar/.*\.g4$
         pass_filenames: false
       - id: test
         name: Test
-        entry: mise run test
+        entry: make test
         language: system
         pass_filenames: false
       - id: lint
         name: Lint
-        entry: mise run lint
+        entry: make lint
         language: system
         pass_filenames: false

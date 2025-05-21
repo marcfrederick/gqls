@@ -8,8 +8,6 @@ import (
 	"github.com/marcfrederick/gqls/internal/gql/parser"
 )
 
-//go:generate antlr -Dlanguage=Go -o ./parser -Xexact-output-dir -package parser -no-visitor ./grammar/GQL.g4
-
 // ErrNotImplemented indicates that a feature is not yet implemented.
 var ErrNotImplemented = errors.New("feature not implemented")
 
