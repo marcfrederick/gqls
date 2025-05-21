@@ -8,13 +8,18 @@
     <img src="assets/logo.png" alt="GQLS Logo" width="256px"/>
 </div>
 
-GQLS is a CLI tool that converts GQL schema definitions (ISO/IEC 39075:2024) into Neo4j-compatible Cypher statements.
+GQLS is a CLI tool that converts GQL schema definitions (ISO/IEC 39075:2024) into Neo4j-compatible Cypher statements. It
+helps bridge the gap between the Graph Query Language (GQL) standard and Neo4j's implementation, making it easier to
+work with both technologies.
 
 ## Features
 
-- Parse GQL schema files and generate Neo4j constraints.
-- Support for multiple Neo4j versions.
-- Command-line interface for ease of use.
+- Parse GQL schema files and generate Neo4j constraints and indexes
+- Support for multiple Neo4j versions
+- Command-line interface for ease of use
+- Web interface for interactive conversion
+- Docker image available for containerized usage
+- APOC plugin support for advanced type constraints
 
 ### Types Supported
 
@@ -65,7 +70,7 @@ GQLS is a CLI tool that converts GQL schema definitions (ISO/IEC 39075:2024) int
 
 - [Go](https://golang.org/doc/install) (>= 1.23)
 - [Make](https://www.gnu.org/software/make/) (for building)
-- [ANTLR4](https://www.antlr.org/download.html) (available as `antlr` in `$PATH`)
+- [Java Runtime Environment (JRE)](https://adoptium.net/de/temurin/releases/) (e.g. Temurin; for parser generation)
 
 ### Clone and Build
 
@@ -83,11 +88,21 @@ Before building, generate the ANTLR4 parser files:
 make generate
 ```
 
-This will populate the `internal/gql/grammar/` directory with Go bindings for the GQL grammar.
+This will populate the `internal/gql/parser/` directory with Go bindings for the GQL grammar.
 You must have a valid Java Runtime (JRE) installed and available in your `$PATH` for this step.
 Make will automatically download the required ANTLR4 jar file if it is not already present.
 
+### Docker
+
+You can also use the Docker image:
+
+```shell
+docker run --rm -v $(pwd):/data marcfrederick/gqls:latest --input /data/schema.gql --output /data/output.cypher
+```
+
 ## Usage
+
+### Command Line Interface
 
 Run the `gqls` command with the required options:
 
@@ -95,12 +110,41 @@ Run the `gqls` command with the required options:
 ./gqls --input schema.gql --neo4j-version 5.9
 ```
 
-### Options
+#### Options
 
-| Flag	              | Description                                                             |
-|--------------------|-------------------------------------------------------------------------|
-| `--input`, `-i`	   | Path to the GQL schema file. Use - or omit to read from stdin.          |
-| `--neo4j-version`	 | Target Neo4j version (e.g., 5.9). Defaults to latest supported version. |
+| Flag              | Description                                                             |
+|-------------------|-------------------------------------------------------------------------|
+| `--input`, `-i`   | Path to the GQL schema file. Use - or omit to read from stdin.          |
+| `--output`, `-o`  | Path to the output file. Defaults to stdout.                            |
+| `--neo4j-version` | Target Neo4j version (e.g., 5.9). Defaults to latest supported version. |
+| `--apoc`          | Generate APOC triggers. Defaults to false.                              |
+| `--serve`         | Start web server on the specified address (e.g., :8080)                 |
+
+### Web Interface
+
+To start the web interface:
+
+```bash
+./gqls --serve :8080
+```
+
+Then open your browser to `http://localhost:8080` to use the interactive converter.
+
+### Example
+
+Given a GQL schema like:
+
+```sql
+CREATE
+PROPERTY GRAPH socialNetworkType {
+    (:Person { name :: STRING NOT NULL, age :: INT8 }),
+    (:Post { content :: STRING, created_at :: DATE }),
+    (:Person)~[:is_friend { since :: DATE NOT NULL }]~(:Person),
+    (:Person)-[:likes { since :: DATE NOT NULL }]->(:Post)
+}
+```
+
+GQLS will generate Neo4j constraints and indexes for all properties and relationships.
 
 ## Development
 
@@ -123,7 +167,7 @@ make test
 To run all tests, including integration tests, use:
 
 ```bash
-make test-all
+make test-integration
 ```
 
 You need to have either `docker` or `podman` installed to run the integration tests.
