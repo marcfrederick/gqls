@@ -5,7 +5,7 @@
 [![Test](https://github.com/marcfrederick/gqls/actions/workflows/test.yml/badge.svg)](https://github.com/marcfrederick/gqls/actions/workflows/test.yml)
 
 <div align="center">
-    <img src="assets/logo.png" alt="GQLS Logo" width="256px"/>
+    <img src="internal/web/static/assets/logo.png" alt="GQLS Logo" width="256px"/>
 </div>
 
 GQLS is a CLI tool that converts GQL schema definitions (ISO/IEC 39075:2024) into Neo4j-compatible Cypher statements. It
