@@ -23,6 +23,14 @@ type NodeType struct {
 	PropertyTypeSet  []*PropertyType
 }
 
+// Cardinality represents the cardinality of a node type.
+type Cardinality struct {
+	// LowerBound is the lower bound of the cardinality. 0 implies no lower bound.
+	LowerBound int
+	// UpperBound is the upper bound of the cardinality. -1 implies no upper bound.
+	UpperBound int
+}
+
 // EdgeKind represents the stringKind of edge type.
 type EdgeKind int
 
@@ -47,6 +55,10 @@ type EdgeType struct {
 	SourceNodeType *NodeType
 	// DestinationNodeType the other endpoint node type.
 	DestinationNodeType *NodeType
+	// SourceCardinality is the cardinality of the source node type.
+	SourceCardinality *Cardinality
+	// DestinationCardinality is the cardinality of the destination node type.
+	DestinationCardinality *Cardinality
 	// Kind is the edge type stringKind (directed or undirected).
 	Kind EdgeKind
 }

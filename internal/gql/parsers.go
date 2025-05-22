@@ -363,32 +363,129 @@ func parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*Edge
 
 // parseEdgeTypePattern parses the edge type pattern.
 func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error) {
+	sourceCardinality := Cardinality{0, -1}
+	destinationCardinality := Cardinality{0, -1}
+
 	if directed := ctx.EdgeTypePatternDirected(); directed != nil {
 		if pointingRight := directed.EdgeTypePatternPointingRight(); pointingRight != nil {
-			return parseEdgeType(
-				EdgeKindDirected,
-				pointingRight.SourceNodeTypeReference(),
-				pointingRight.DestinationNodeTypeReference(),
-				pointingRight.ArcTypePointingRight().EdgeTypeFiller(),
-			)
+
+			var edgeTypeFiller parser.IEdgeTypeFillerContext
+			switch {
+			case pointingRight.ArcTypePointingRight().SimpleArcTypePointingRight() != nil:
+				edgeTypeFiller = pointingRight.ArcTypePointingRight().SimpleArcTypePointingRight().EdgeTypeFiller()
+			case pointingRight.ArcTypePointingRight().ArcWithCardinalityPointingRight() != nil:
+				edgeTypeFiller = pointingRight.ArcTypePointingRight().ArcWithCardinalityPointingRight().EdgeTypeFiller()
+
+				source, err := parseCardinality(pointingRight.ArcTypePointingRight().ArcWithCardinalityPointingRight().Cardinality(0))
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cardinality: %w", err)
+				}
+				sourceCardinality = source
+
+				destination, err := parseCardinality(pointingRight.ArcTypePointingRight().ArcWithCardinalityPointingRight().Cardinality(1))
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cardinality: %w", err)
+				}
+				destinationCardinality = destination
+			}
+
+			e, err := parseEdgeType(EdgeKindDirected, pointingRight.SourceNodeTypeReference(), pointingRight.DestinationNodeTypeReference(), edgeTypeFiller)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing edge type: %w", err)
+			}
+
+			e.SourceCardinality = &sourceCardinality
+			e.DestinationCardinality = &destinationCardinality
+			return e, nil
 		} else if pointingLeft := directed.EdgeTypePatternPointingLeft(); pointingLeft != nil {
-			return parseEdgeType(
-				EdgeKindDirected,
-				pointingLeft.SourceNodeTypeReference(),
-				pointingLeft.DestinationNodeTypeReference(),
-				pointingLeft.ArcTypePointingLeft().EdgeTypeFiller(),
-			)
+			var edgeTypeFiller parser.IEdgeTypeFillerContext
+			switch {
+			case pointingLeft.ArcTypePointingLeft().SimpleArcTypePointingLeft() != nil:
+				edgeTypeFiller = pointingLeft.ArcTypePointingLeft().SimpleArcTypePointingLeft().EdgeTypeFiller()
+			case pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft() != nil:
+				edgeTypeFiller = pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().EdgeTypeFiller()
+				source, err := parseCardinality(pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().Cardinality(0))
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cardinality: %w", err)
+				}
+				sourceCardinality = source
+
+				destination, err := parseCardinality(pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().Cardinality(1))
+				if err != nil {
+					return nil, fmt.Errorf("error parsing cardinality: %w", err)
+				}
+				destinationCardinality = destination
+			}
+
+			edgeType, err := parseEdgeType(EdgeKindDirected, pointingLeft.SourceNodeTypeReference(), pointingLeft.DestinationNodeTypeReference(), edgeTypeFiller)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing edge type: %w", err)
+			}
+
+			edgeType.SourceCardinality = &sourceCardinality
+			edgeType.DestinationCardinality = &destinationCardinality
+			return edgeType, nil
 		}
 		return nil, fmt.Errorf("error invalid directed edge type pattern: %s", ctx.GetText())
 	} else if undirected := ctx.EdgeTypePatternUndirected(); undirected != nil {
-		return parseEdgeType(
-			EdgeKindUndirected,
-			undirected.SourceNodeTypeReference(),
-			undirected.DestinationNodeTypeReference(),
-			undirected.ArcTypeUndirected().EdgeTypeFiller(),
-		)
+		var edgeTypeFiller parser.IEdgeTypeFillerContext
+		switch {
+		case undirected.ArcTypeUndirected().SimpleArcTypeUndirected() != nil:
+			edgeTypeFiller = undirected.ArcTypeUndirected().SimpleArcTypeUndirected().EdgeTypeFiller()
+		case undirected.ArcTypeUndirected().ArcWithCardinalityUndirected() != nil:
+			edgeTypeFiller = undirected.ArcTypeUndirected().ArcWithCardinalityUndirected().EdgeTypeFiller()
+			source, err := parseCardinality(undirected.ArcTypeUndirected().ArcWithCardinalityUndirected().Cardinality(0))
+			if err != nil {
+				return nil, fmt.Errorf("error parsing cardinality: %w", err)
+			}
+			sourceCardinality = source
+			destination, err := parseCardinality(undirected.ArcTypeUndirected().ArcWithCardinalityUndirected().Cardinality(1))
+			if err != nil {
+				return nil, fmt.Errorf("error parsing cardinality: %w", err)
+			}
+			destinationCardinality = destination
+		}
+
+		edgeType, err := parseEdgeType(EdgeKindUndirected, undirected.SourceNodeTypeReference(), undirected.DestinationNodeTypeReference(), edgeTypeFiller)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing edge type: %w", err)
+		}
+
+		edgeType.SourceCardinality = &sourceCardinality
+		edgeType.DestinationCardinality = &destinationCardinality
+		return edgeType, nil
 	}
 	return nil, fmt.Errorf("error invalid edge type pattern: %s", ctx.GetText())
+}
+
+func parseCardinality(ctx parser.ICardinalityContext) (Cardinality, error) {
+	cardinality := Cardinality{LowerBound: 0, UpperBound: -1}
+	if ctx == nil {
+		return cardinality, nil
+	}
+
+	if cardinalityFiller := ctx.CardinalityFiller(); cardinalityFiller != nil {
+		if cardinalityLowerBound := cardinalityFiller.CardinalityLowerBound(); cardinalityLowerBound != nil {
+			lowerBound, err := strconv.Atoi(cardinalityLowerBound.UNSIGNED_DECIMAL_INTEGER().GetText())
+			if err != nil {
+				return Cardinality{}, fmt.Errorf("error parsing lower bound: %w", err)
+			}
+			cardinality.LowerBound = lowerBound
+		}
+		if cardinalityUpperBound := cardinalityFiller.CardinalityUpperBound(); cardinalityUpperBound != nil {
+			if cardinalityUpperBound.ASTERISK() != nil {
+				cardinality.UpperBound = -1
+			} else {
+				upperBound, err := strconv.Atoi(cardinalityUpperBound.UNSIGNED_DECIMAL_INTEGER().GetText())
+				if err != nil {
+					return Cardinality{}, fmt.Errorf("error parsing upper bound: %w", err)
+				}
+				cardinality.UpperBound = upperBound
+			}
+		}
+	}
+
+	return cardinality, nil
 }
 
 // parseEdgeType parses the edge type from the context.

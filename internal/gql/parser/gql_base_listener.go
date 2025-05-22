@@ -2104,17 +2104,83 @@ func (s *BaseGQLListener) EnterArcTypePointingRight(ctx *ArcTypePointingRightCon
 // ExitArcTypePointingRight is called when production arcTypePointingRight is exited.
 func (s *BaseGQLListener) ExitArcTypePointingRight(ctx *ArcTypePointingRightContext) {}
 
+// EnterSimpleArcTypePointingRight is called when production simpleArcTypePointingRight is entered.
+func (s *BaseGQLListener) EnterSimpleArcTypePointingRight(ctx *SimpleArcTypePointingRightContext) {}
+
+// ExitSimpleArcTypePointingRight is called when production simpleArcTypePointingRight is exited.
+func (s *BaseGQLListener) ExitSimpleArcTypePointingRight(ctx *SimpleArcTypePointingRightContext) {}
+
+// EnterArcWithCardinalityPointingRight is called when production arcWithCardinalityPointingRight is entered.
+func (s *BaseGQLListener) EnterArcWithCardinalityPointingRight(ctx *ArcWithCardinalityPointingRightContext) {
+}
+
+// ExitArcWithCardinalityPointingRight is called when production arcWithCardinalityPointingRight is exited.
+func (s *BaseGQLListener) ExitArcWithCardinalityPointingRight(ctx *ArcWithCardinalityPointingRightContext) {
+}
+
 // EnterArcTypePointingLeft is called when production arcTypePointingLeft is entered.
 func (s *BaseGQLListener) EnterArcTypePointingLeft(ctx *ArcTypePointingLeftContext) {}
 
 // ExitArcTypePointingLeft is called when production arcTypePointingLeft is exited.
 func (s *BaseGQLListener) ExitArcTypePointingLeft(ctx *ArcTypePointingLeftContext) {}
 
+// EnterSimpleArcTypePointingLeft is called when production simpleArcTypePointingLeft is entered.
+func (s *BaseGQLListener) EnterSimpleArcTypePointingLeft(ctx *SimpleArcTypePointingLeftContext) {}
+
+// ExitSimpleArcTypePointingLeft is called when production simpleArcTypePointingLeft is exited.
+func (s *BaseGQLListener) ExitSimpleArcTypePointingLeft(ctx *SimpleArcTypePointingLeftContext) {}
+
+// EnterArcWithCardinalityPointingLeft is called when production arcWithCardinalityPointingLeft is entered.
+func (s *BaseGQLListener) EnterArcWithCardinalityPointingLeft(ctx *ArcWithCardinalityPointingLeftContext) {
+}
+
+// ExitArcWithCardinalityPointingLeft is called when production arcWithCardinalityPointingLeft is exited.
+func (s *BaseGQLListener) ExitArcWithCardinalityPointingLeft(ctx *ArcWithCardinalityPointingLeftContext) {
+}
+
 // EnterArcTypeUndirected is called when production arcTypeUndirected is entered.
 func (s *BaseGQLListener) EnterArcTypeUndirected(ctx *ArcTypeUndirectedContext) {}
 
 // ExitArcTypeUndirected is called when production arcTypeUndirected is exited.
 func (s *BaseGQLListener) ExitArcTypeUndirected(ctx *ArcTypeUndirectedContext) {}
+
+// EnterSimpleArcTypeUndirected is called when production simpleArcTypeUndirected is entered.
+func (s *BaseGQLListener) EnterSimpleArcTypeUndirected(ctx *SimpleArcTypeUndirectedContext) {}
+
+// ExitSimpleArcTypeUndirected is called when production simpleArcTypeUndirected is exited.
+func (s *BaseGQLListener) ExitSimpleArcTypeUndirected(ctx *SimpleArcTypeUndirectedContext) {}
+
+// EnterArcWithCardinalityUndirected is called when production arcWithCardinalityUndirected is entered.
+func (s *BaseGQLListener) EnterArcWithCardinalityUndirected(ctx *ArcWithCardinalityUndirectedContext) {
+}
+
+// ExitArcWithCardinalityUndirected is called when production arcWithCardinalityUndirected is exited.
+func (s *BaseGQLListener) ExitArcWithCardinalityUndirected(ctx *ArcWithCardinalityUndirectedContext) {
+}
+
+// EnterCardinality is called when production cardinality is entered.
+func (s *BaseGQLListener) EnterCardinality(ctx *CardinalityContext) {}
+
+// ExitCardinality is called when production cardinality is exited.
+func (s *BaseGQLListener) ExitCardinality(ctx *CardinalityContext) {}
+
+// EnterCardinalityFiller is called when production cardinalityFiller is entered.
+func (s *BaseGQLListener) EnterCardinalityFiller(ctx *CardinalityFillerContext) {}
+
+// ExitCardinalityFiller is called when production cardinalityFiller is exited.
+func (s *BaseGQLListener) ExitCardinalityFiller(ctx *CardinalityFillerContext) {}
+
+// EnterCardinalityLowerBound is called when production cardinalityLowerBound is entered.
+func (s *BaseGQLListener) EnterCardinalityLowerBound(ctx *CardinalityLowerBoundContext) {}
+
+// ExitCardinalityLowerBound is called when production cardinalityLowerBound is exited.
+func (s *BaseGQLListener) ExitCardinalityLowerBound(ctx *CardinalityLowerBoundContext) {}
+
+// EnterCardinalityUpperBound is called when production cardinalityUpperBound is entered.
+func (s *BaseGQLListener) EnterCardinalityUpperBound(ctx *CardinalityUpperBoundContext) {}
+
+// ExitCardinalityUpperBound is called when production cardinalityUpperBound is exited.
+func (s *BaseGQLListener) ExitCardinalityUpperBound(ctx *CardinalityUpperBoundContext) {}
 
 // EnterSourceNodeTypeReference is called when production sourceNodeTypeReference is entered.
 func (s *BaseGQLListener) EnterSourceNodeTypeReference(ctx *SourceNodeTypeReferenceContext) {}

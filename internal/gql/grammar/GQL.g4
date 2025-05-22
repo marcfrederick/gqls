@@ -1613,17 +1613,64 @@ edgeTypePatternUndirected
     : sourceNodeTypeReference arcTypeUndirected destinationNodeTypeReference
     ;
 
+// BEGIN MODIFIED
 arcTypePointingRight
+    : simpleArcTypePointingRight
+    | arcWithCardinalityPointingRight
+    ;
+
+simpleArcTypePointingRight
     : MINUS_LEFT_BRACKET edgeTypeFiller BRACKET_RIGHT_ARROW
     ;
 
+arcWithCardinalityPointingRight
+    : MINUS_SIGN cardinality MINUS_LEFT_BRACKET
+      edgeTypeFiller RIGHT_BRACKET_MINUS cardinality RIGHT_ARROW
+    ;
+
 arcTypePointingLeft
+    : simpleArcTypePointingLeft
+    | arcWithCardinalityPointingLeft
+    ;
+
+simpleArcTypePointingLeft
     : LEFT_ARROW_BRACKET edgeTypeFiller RIGHT_BRACKET_MINUS
     ;
 
+arcWithCardinalityPointingLeft
+    : LEFT_ARROW cardinality LEFT_ARROW_BRACKET edgeTypeFiller RIGHT_BRACKET_MINUS cardinality MINUS_SIGN
+    ;
+
 arcTypeUndirected
+    : simpleArcTypeUndirected
+    | arcWithCardinalityUndirected
+    ;
+
+simpleArcTypeUndirected
     : TILDE_LEFT_BRACKET edgeTypeFiller RIGHT_BRACKET_TILDE
     ;
+
+arcWithCardinalityUndirected
+    : TILDE cardinality TILDE_LEFT_BRACKET edgeTypeFiller RIGHT_BRACKET_TILDE cardinality TILDE
+    ;
+
+cardinality
+    : LEFT_PAREN cardinalityFiller RIGHT_PAREN
+    ;
+
+cardinalityFiller
+    : cardinalityLowerBound COMMA cardinalityUpperBound
+    ;
+
+cardinalityLowerBound
+    : UNSIGNED_DECIMAL_INTEGER
+    ;
+
+cardinalityUpperBound
+    : UNSIGNED_DECIMAL_INTEGER
+    | ASTERISK
+    ;
+// END MODIFIED
 
 sourceNodeTypeReference
     : LEFT_PAREN sourceNodeTypeAlias RIGHT_PAREN

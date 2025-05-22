@@ -991,11 +991,41 @@ type GQLListener interface {
 	// EnterArcTypePointingRight is called when entering the arcTypePointingRight production.
 	EnterArcTypePointingRight(c *ArcTypePointingRightContext)
 
+	// EnterSimpleArcTypePointingRight is called when entering the simpleArcTypePointingRight production.
+	EnterSimpleArcTypePointingRight(c *SimpleArcTypePointingRightContext)
+
+	// EnterArcWithCardinalityPointingRight is called when entering the arcWithCardinalityPointingRight production.
+	EnterArcWithCardinalityPointingRight(c *ArcWithCardinalityPointingRightContext)
+
 	// EnterArcTypePointingLeft is called when entering the arcTypePointingLeft production.
 	EnterArcTypePointingLeft(c *ArcTypePointingLeftContext)
 
+	// EnterSimpleArcTypePointingLeft is called when entering the simpleArcTypePointingLeft production.
+	EnterSimpleArcTypePointingLeft(c *SimpleArcTypePointingLeftContext)
+
+	// EnterArcWithCardinalityPointingLeft is called when entering the arcWithCardinalityPointingLeft production.
+	EnterArcWithCardinalityPointingLeft(c *ArcWithCardinalityPointingLeftContext)
+
 	// EnterArcTypeUndirected is called when entering the arcTypeUndirected production.
 	EnterArcTypeUndirected(c *ArcTypeUndirectedContext)
+
+	// EnterSimpleArcTypeUndirected is called when entering the simpleArcTypeUndirected production.
+	EnterSimpleArcTypeUndirected(c *SimpleArcTypeUndirectedContext)
+
+	// EnterArcWithCardinalityUndirected is called when entering the arcWithCardinalityUndirected production.
+	EnterArcWithCardinalityUndirected(c *ArcWithCardinalityUndirectedContext)
+
+	// EnterCardinality is called when entering the cardinality production.
+	EnterCardinality(c *CardinalityContext)
+
+	// EnterCardinalityFiller is called when entering the cardinalityFiller production.
+	EnterCardinalityFiller(c *CardinalityFillerContext)
+
+	// EnterCardinalityLowerBound is called when entering the cardinalityLowerBound production.
+	EnterCardinalityLowerBound(c *CardinalityLowerBoundContext)
+
+	// EnterCardinalityUpperBound is called when entering the cardinalityUpperBound production.
+	EnterCardinalityUpperBound(c *CardinalityUpperBoundContext)
 
 	// EnterSourceNodeTypeReference is called when entering the sourceNodeTypeReference production.
 	EnterSourceNodeTypeReference(c *SourceNodeTypeReferenceContext)
@@ -2827,11 +2857,41 @@ type GQLListener interface {
 	// ExitArcTypePointingRight is called when exiting the arcTypePointingRight production.
 	ExitArcTypePointingRight(c *ArcTypePointingRightContext)
 
+	// ExitSimpleArcTypePointingRight is called when exiting the simpleArcTypePointingRight production.
+	ExitSimpleArcTypePointingRight(c *SimpleArcTypePointingRightContext)
+
+	// ExitArcWithCardinalityPointingRight is called when exiting the arcWithCardinalityPointingRight production.
+	ExitArcWithCardinalityPointingRight(c *ArcWithCardinalityPointingRightContext)
+
 	// ExitArcTypePointingLeft is called when exiting the arcTypePointingLeft production.
 	ExitArcTypePointingLeft(c *ArcTypePointingLeftContext)
 
+	// ExitSimpleArcTypePointingLeft is called when exiting the simpleArcTypePointingLeft production.
+	ExitSimpleArcTypePointingLeft(c *SimpleArcTypePointingLeftContext)
+
+	// ExitArcWithCardinalityPointingLeft is called when exiting the arcWithCardinalityPointingLeft production.
+	ExitArcWithCardinalityPointingLeft(c *ArcWithCardinalityPointingLeftContext)
+
 	// ExitArcTypeUndirected is called when exiting the arcTypeUndirected production.
 	ExitArcTypeUndirected(c *ArcTypeUndirectedContext)
+
+	// ExitSimpleArcTypeUndirected is called when exiting the simpleArcTypeUndirected production.
+	ExitSimpleArcTypeUndirected(c *SimpleArcTypeUndirectedContext)
+
+	// ExitArcWithCardinalityUndirected is called when exiting the arcWithCardinalityUndirected production.
+	ExitArcWithCardinalityUndirected(c *ArcWithCardinalityUndirectedContext)
+
+	// ExitCardinality is called when exiting the cardinality production.
+	ExitCardinality(c *CardinalityContext)
+
+	// ExitCardinalityFiller is called when exiting the cardinalityFiller production.
+	ExitCardinalityFiller(c *CardinalityFillerContext)
+
+	// ExitCardinalityLowerBound is called when exiting the cardinalityLowerBound production.
+	ExitCardinalityLowerBound(c *CardinalityLowerBoundContext)
+
+	// ExitCardinalityUpperBound is called when exiting the cardinalityUpperBound production.
+	ExitCardinalityUpperBound(c *CardinalityUpperBoundContext)
 
 	// ExitSourceNodeTypeReference is called when exiting the sourceNodeTypeReference production.
 	ExitSourceNodeTypeReference(c *SourceNodeTypeReferenceContext)
