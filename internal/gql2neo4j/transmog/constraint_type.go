@@ -25,7 +25,7 @@ func (t *typeConstraintTransmogrifier) IsCompatible(meta *DatabaseMetadata) (boo
 	return editionSupported && versionSupported, nil
 }
 
-func (t *typeConstraintTransmogrifier) TransmogrifyProperty(_ EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *typeConstraintTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	var neo4jType neo4j.PropertyType
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor:
@@ -51,11 +51,10 @@ func (t *typeConstraintTransmogrifier) TransmogrifyProperty(_ EntityType, label 
 		return nil, fmt.Errorf("error unsupported GQL type: %s", valueType)
 	}
 
-	// FIXME: Handle EdgeType
 	return []neo4j.SchemaObject{
 		&constraints.PropertyTypeConstraint{
 			Name:         mustFormatName("type", label, propertyType.PropertyName),
-			Pattern:      fmt.Sprintf("(n:%s)", label),
+			Pattern:      getPattern(entityType, "n", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
 			PropertyType: string(neo4jType),
 		},

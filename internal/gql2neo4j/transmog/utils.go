@@ -61,6 +61,18 @@ func mustFormatName(prefix string, components ...string) string {
 	return strings.ToLower(b.String())
 }
 
+// getPattern generates a Cypher pattern based on the entity type, variable, and label.
+func getPattern(entityType EntityType, variable, label string) string {
+	switch entityType {
+	case NodeEntityType:
+		return fmt.Sprintf("(%s:%s)", variable, label)
+	case EdgeEntityType:
+		return fmt.Sprintf("()-[%s:%s]->()", variable, label)
+	}
+	panic("unreachable")
+}
+
+// entityTypeToVariables maps an entity type to its corresponding variables.
 func entityTypeToVariables(entityType EntityType) (string, string) {
 	switch entityType {
 	case NodeEntityType:

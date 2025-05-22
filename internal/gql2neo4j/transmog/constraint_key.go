@@ -17,22 +17,15 @@ func (t *keyConstraintTransmogrifier) IsCompatible(meta *DatabaseMetadata) (bool
 }
 
 func (t *keyConstraintTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
-	var pattern string
-	switch entityType {
-	case NodeEntityType:
-		pattern = fmt.Sprintf("(n:%s)", label)
-	case EdgeEntityType:
-		pattern = fmt.Sprintf("(n:%s)", label)
+	if propertyType.ExtendedAttributes == nil || !propertyType.ExtendedAttributes.IsPrimaryKey {
+		return nil, nil
 	}
 
-	var schemaObjects []neo4j.SchemaObject
-	if propertyType.ExtendedAttributes != nil && propertyType.ExtendedAttributes.IsPrimaryKey {
-		schemaObjects = append(schemaObjects, &constraints.KeyConstraint{
+	return []neo4j.SchemaObject{
+		&constraints.KeyConstraint{
 			Name:         mustFormatName("key", label, propertyType.PropertyName),
-			Pattern:      pattern,
+			Pattern:      getPattern(entityType, "n", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
-		})
-	}
-
-	return schemaObjects, nil
+		},
+	}, nil
 }

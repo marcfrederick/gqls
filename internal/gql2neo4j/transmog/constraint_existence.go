@@ -18,22 +18,15 @@ func (t *existenceConstraintTransmogrifier) IsCompatible(meta *DatabaseMetadata)
 }
 
 func (t *existenceConstraintTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
-	var pattern string
-	switch entityType {
-	case NodeEntityType:
-		pattern = fmt.Sprintf("(n:%s)", label)
-	case EdgeEntityType:
-		pattern = fmt.Sprintf("(n:%s)", label)
+	if propertyType.PropertyValueType.IsNullable() {
+		return nil, nil
 	}
 
-	var schemaObjects []neo4j.SchemaObject
-	if !propertyType.PropertyValueType.IsNullable() {
-		schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
+	return []neo4j.SchemaObject{
+		&constraints.PropertyExistenceConstraint{
 			Name:         mustFormatName("existence", label, propertyType.PropertyName),
-			Pattern:      pattern,
+			Pattern:      getPattern(entityType, "n", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
-		})
-	}
-
-	return schemaObjects, nil
+		},
+	}, nil
 }
