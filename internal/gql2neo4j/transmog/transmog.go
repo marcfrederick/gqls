@@ -10,8 +10,8 @@ import (
 //go:embed templates/*
 var triggerTemplates embed.FS
 
-// Transmogrifiers is a list of all transmogrifiers.
-var Transmogrifiers = []Transmogrifier{
+// transmogrifiers holds all transmogrifiers.
+var transmogrifiers = []Transmogrifier{
 	&typeConstraintTransmogrifier{},
 	&uniqueConstraintTransmogrifier{},
 	&existenceConstraintTransmogrifier{},
@@ -19,6 +19,17 @@ var Transmogrifiers = []Transmogrifier{
 	&stringLengthTriggerTransmogrifier{},
 	&numericRangeTriggerTransmogrifier{},
 	&edgeEndpointsTriggerTransmogrifier{},
+}
+
+// Transmogrifiers returns a list of all transmogrifiers of a specific type.
+func Transmogrifiers[T Transmogrifier]() []T {
+	var filtered []T
+	for _, t := range transmogrifiers {
+		if specific, ok := t.(T); ok {
+			filtered = append(filtered, specific)
+		}
+	}
+	return filtered
 }
 
 // Transmogrifier is an interface that defines a transmogrifier (converter).

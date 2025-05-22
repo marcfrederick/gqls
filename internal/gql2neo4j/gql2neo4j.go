@@ -13,9 +13,6 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j"
 )
 
-// ErrUnsupported is returned when a feature is not supported in the current context.
-var ErrUnsupported = fmt.Errorf("unsupported")
-
 // ConvertBytes parses a GQL schema and generates Neo4j constraints for the specified version.
 func ConvertBytes(data []byte, meta transmog.DatabaseMetadata) ([]byte, error) {
 	result, err := ConvertString(string(data), meta)
@@ -52,7 +49,7 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 
 	for _, nodeType := range graphType.NodeTypeSet {
 		if len(nodeType.NodeTypeLabelSet) != 1 {
-			return nil, fmt.Errorf("error Neo4j only supports one label per node type: %w", ErrUnsupported)
+			return nil, fmt.Errorf("error Neo4j only supports one label per node type")
 		}
 		label := nodeType.NodeTypeLabelSet[0]
 
@@ -62,7 +59,7 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 		}
 		schemaObjects = append(schemaObjects, nodeSchemaObjects...)
 
-		objects, err := processProperties(transmog.Transmogrifiers, transmog.NodeEntityType, label, nodeType.PropertyTypeSet, &meta)
+		objects, err := processProperties(transmog.NodeEntityType, label, nodeType.PropertyTypeSet, &meta)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
@@ -71,7 +68,7 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 
 	for _, edgeType := range graphType.EdgeTypeSet {
 		if len(edgeType.EdgeTypeLabelSet) != 1 {
-			return nil, fmt.Errorf("error Neo4j only supports one label per edge type: %w", ErrUnsupported)
+			return nil, fmt.Errorf("error Neo4j only supports one label per edge type")
 		}
 		label := edgeType.EdgeTypeLabelSet[0]
 
@@ -81,7 +78,7 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 		}
 		schemaObjects = append(schemaObjects, edgeSchemaObjects...)
 
-		propertyObjects, err := processProperties(transmog.Transmogrifiers, transmog.EdgeEntityType, label, edgeType.EdgeTypePropertySet, &meta)
+		propertyObjects, err := processProperties(transmog.EdgeEntityType, label, edgeType.EdgeTypePropertySet, &meta)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
@@ -92,16 +89,11 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 }
 
 // processProperties processes properties for a given label and version.
-func processProperties(transmogrifiers []transmog.Transmogrifier, entityType transmog.EntityType, label string, properties []*gql.PropertyType, meta *transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+func processProperties(entityType transmog.EntityType, label string, properties []*gql.PropertyType, meta *transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, property := range properties {
-		for _, transmogrifier := range transmogrifiers {
-			propertyTransmogrifier, ok := transmogrifier.(transmog.PropertyTransmogrifier)
-			if !ok {
-				continue
-			}
-
+		for _, propertyTransmogrifier := range transmog.Transmogrifiers[transmog.PropertyTransmogrifier]() {
 			isCompatible, err := propertyTransmogrifier.IsCompatible(meta)
 			if err != nil {
 				return nil, fmt.Errorf("error checking compatibility: %w", err)
@@ -123,12 +115,7 @@ func processProperties(transmogrifiers []transmog.Transmogrifier, entityType tra
 
 func transmogrifyNode(nodeType *gql.NodeType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
-	for _, transmogrifier := range transmog.Transmogrifiers {
-		nodeTransmogrifier, ok := transmogrifier.(transmog.NodeTransmogrifier)
-		if !ok {
-			continue
-		}
-
+	for _, nodeTransmogrifier := range transmog.Transmogrifiers[transmog.NodeTransmogrifier]() {
 		isCompatible, err := nodeTransmogrifier.IsCompatible(&meta)
 		if err != nil {
 			return nil, fmt.Errorf("error checking compatibility: %w", err)
@@ -149,13 +136,8 @@ func transmogrifyNode(nodeType *gql.NodeType, meta transmog.DatabaseMetadata) ([
 
 func transmogrifyEdge(edgeType *gql.EdgeType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
-	for _, transmogrifier := range transmog.Transmogrifiers {
-		nodeTransmogrifier, ok := transmogrifier.(transmog.EdgeTransmogrifier)
-		if !ok {
-			continue
-		}
-
-		isCompatible, err := nodeTransmogrifier.IsCompatible(&meta)
+	for _, edgeTransmogrifier := range transmog.Transmogrifiers[transmog.EdgeTransmogrifier]() {
+		isCompatible, err := edgeTransmogrifier.IsCompatible(&meta)
 		if err != nil {
 			return nil, fmt.Errorf("error checking compatibility: %w", err)
 		}
@@ -164,7 +146,7 @@ func transmogrifyEdge(edgeType *gql.EdgeType, meta transmog.DatabaseMetadata) ([
 			continue
 		}
 
-		transmogrifiedObjects, err := nodeTransmogrifier.TransmogrifyEdge(edgeType)
+		transmogrifiedObjects, err := edgeTransmogrifier.TransmogrifyEdge(edgeType)
 		if err != nil {
 			return nil, fmt.Errorf("error transmogrifying edge type: %w", err)
 		}
