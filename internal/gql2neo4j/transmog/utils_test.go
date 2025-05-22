@@ -1,4 +1,4 @@
-package gql2neo4j
+package transmog
 
 import (
 	"testing"
@@ -70,6 +70,30 @@ func Test_isVersionSupported(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("isVersionSupported() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_mustFormatName(t *testing.T) {
+	type args struct {
+		prefix     string
+		components []string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{"one component", args{"prefix", []string{"component1"}}, "prefix_component1"},
+		{"two components", args{"prefix", []string{"component1", "component2"}}, "prefix_component1_component2"},
+		{"uppercase prefix", args{"PREFIX", []string{"component1"}}, "prefix_component1"},
+		{"uppercase component", args{"prefix", []string{"COMPONENT1"}}, "prefix_component1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := mustFormatName(tt.args.prefix, tt.args.components...); got != tt.want {
+				t.Errorf("mustFormatName() = %v, want %v", got, tt.want)
 			}
 		})
 	}

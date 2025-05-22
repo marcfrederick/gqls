@@ -1,6 +1,6 @@
 //go:build integration
 
-package gql2neo4j
+package transmog
 
 import (
 	"context"
@@ -15,50 +15,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-// containerMutex is a mutex to synchronize access to the Neo4j container.
 var containerMutex sync.Mutex
-
-func TestNumericRangeTrigger(t *testing.T) {
-	neo4jIntegrationTest(t, func(session neo4j.SessionWithContext) {
-		trigger, err := newNumericRangeTrigger(nodeEntityType, "Person", "age", 8)
-		if err != nil {
-			t.Fatalf("failed to create numeric range trigger: %v", err)
-		}
-
-		_, err = session.Run(t.Context(), trigger.CreateStatement(), nil)
-		if err != nil {
-			t.Errorf("failed to run trigger creation statement: %v", err)
-		}
-	})
-}
-
-func TestStringLengthTrigger(t *testing.T) {
-	neo4jIntegrationTest(t, func(session neo4j.SessionWithContext) {
-		trigger, err := newStringLengthTrigger(edgeEntityType, "Person", "name", 1, 255)
-		if err != nil {
-			t.Fatalf("failed to create string length trigger: %v", err)
-		}
-
-		_, err = session.Run(t.Context(), trigger.CreateStatement(), nil)
-		if err != nil {
-			t.Errorf("failed to run trigger creation statement: %v", err)
-		}
-	})
-}
-
-func TestEdgeEndpointTrigger(t *testing.T) {
-	neo4jIntegrationTest(t, func(session neo4j.SessionWithContext) {
-		trigger, err := newEdgeEndpointTrigger("LIKES", "Person", "Post")
-		if err != nil {
-			t.Fatalf("failed to create edge endpoint trigger: %v", err)
-		}
-
-		_, err = session.Run(t.Context(), trigger.CreateStatement(), nil)
-		if err != nil {
-			t.Errorf("failed to run trigger creation statement: %v", err)
-		}
-	})
-}
 
 func neo4jIntegrationTest(t *testing.T, testFunc func(session neo4j.SessionWithContext)) {
 	t.Helper()

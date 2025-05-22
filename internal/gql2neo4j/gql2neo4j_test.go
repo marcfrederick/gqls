@@ -12,6 +12,7 @@ import (
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
+	"github.com/marcfrederick/gqls/internal/gql2neo4j/transmog"
 	"github.com/marcfrederick/gqls/internal/neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
@@ -33,7 +34,7 @@ func TestConvertString(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc := loadTestCase(t, path)
 
-			got, err := gql2neo4j.ConvertString(tc.Input, gql2neo4j.Opts{ApocEnabled: true})
+			got, err := gql2neo4j.ConvertString(tc.Input, transmog.DatabaseMetadata{APOCEnabled: true})
 			if err != nil {
 				t.Fatalf("ConvertString() returned error: %v", err)
 			}
@@ -48,7 +49,7 @@ func TestConvertString(t *testing.T) {
 func TestConvert(t *testing.T) {
 	type args struct {
 		graphType *gql.GraphType
-		opts      gql2neo4j.Opts
+		opts      transmog.DatabaseMetadata
 	}
 	tests := []struct {
 		name    string
@@ -90,8 +91,8 @@ func TestConvert(t *testing.T) {
 						},
 					},
 				},
-				opts: gql2neo4j.Opts{
-					ApocEnabled: true,
+				opts: transmog.DatabaseMetadata{
+					APOCEnabled: true,
 				},
 			},
 			want: []neo4j.SchemaObject{
@@ -107,16 +108,16 @@ func TestConvert(t *testing.T) {
 					PropertyName: "n.age",
 					PropertyType: "INTEGER",
 				},
-				triggers.NewTrigger(
-					"numeric_range_person_age",
-					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null UNION UNWIND keys($assignedNodeProperties) AS prop UNWIND $assignedNodeProperties[prop] AS change WITH change WHERE change:Person AND change.age IS NOT NULL AND (change.age < -128 OR change.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null",
-					triggers.Selector{Phase: triggers.Before},
-				),
 				&constraints.PropertyExistenceConstraint{
 					Name:         "existence_person_age",
 					Pattern:      "(n:Person)",
 					PropertyName: "n.age",
 				},
+				triggers.NewTrigger(
+					"numeric_range_person_age",
+					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null UNION UNWIND keys($assignedNodeProperties) AS prop UNWIND $assignedNodeProperties[prop] AS change WITH change WHERE change:Person AND change.age IS NOT NULL AND (change.age < -128 OR change.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null",
+					triggers.Selector{Phase: triggers.Before},
+				),
 			},
 		},
 		{
@@ -138,9 +139,9 @@ func TestConvert(t *testing.T) {
 						},
 					},
 				},
-				opts: gql2neo4j.Opts{
-					Neo4jVersion: "5.8",
-					ApocEnabled:  true,
+				opts: transmog.DatabaseMetadata{
+					Version:     "5.8",
+					APOCEnabled: true,
 				},
 			},
 			want: nil,

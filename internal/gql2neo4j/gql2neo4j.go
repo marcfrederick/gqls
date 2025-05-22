@@ -3,38 +3,22 @@ package gql2neo4j
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
+
 	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/gql/datatype"
+	"github.com/marcfrederick/gqls/internal/gql/parser"
+	"github.com/marcfrederick/gqls/internal/gql2neo4j/transmog"
 	"github.com/marcfrederick/gqls/internal/neo4j"
-	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
-)
-
-type entityType uint8
-
-const (
-	// nodeEntityType represents a node entity type.
-	nodeEntityType entityType = iota
-	// edgeEntityType represents an edge entity type.
-	edgeEntityType
 )
 
 // ErrUnsupported is returned when a feature is not supported in the current context.
 var ErrUnsupported = fmt.Errorf("unsupported")
 
-// Opts contains options for the conversion process.
-type Opts struct {
-	// Neo4jVersion is the version of Neo4j to generate constraints for.
-	Neo4jVersion string
-	// ApocEnabled indicates if APOC is enabled in the Neo4j instance.
-	ApocEnabled bool
-}
-
 // ConvertBytes parses a GQL schema and generates Neo4j constraints for the specified version.
-func ConvertBytes(data []byte, opts Opts) ([]byte, error) {
-	result, err := ConvertString(string(data), opts)
+func ConvertBytes(data []byte, meta transmog.DatabaseMetadata) ([]byte, error) {
+	result, err := ConvertString(string(data), meta)
 	if err != nil {
 		return nil, fmt.Errorf("error converting GQL to Neo4j: %w", err)
 	}
@@ -42,7 +26,7 @@ func ConvertBytes(data []byte, opts Opts) ([]byte, error) {
 }
 
 // ConvertString parses a GQL schema and generates Neo4j constraints for the specified version.
-func ConvertString(data string, opts Opts) (string, error) {
+func ConvertString(data string, meta transmog.DatabaseMetadata) (string, error) {
 	parsed, err := parseGQL(data)
 	if err != nil {
 		return "", fmt.Errorf("error parsing GQL: %w", err)
@@ -50,7 +34,7 @@ func ConvertString(data string, opts Opts) (string, error) {
 
 	var result strings.Builder
 	for _, graphType := range parsed.CreateGraphTypeStatements {
-		schemaObjects, err := Convert(graphType, opts)
+		schemaObjects, err := Convert(graphType, meta)
 		if err != nil {
 			return "", fmt.Errorf("error converting graph type: %w", err)
 		}
@@ -63,7 +47,7 @@ func ConvertString(data string, opts Opts) (string, error) {
 }
 
 // Convert builds Neo4j constraints from a GQL GraphType definition.
-func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) {
+func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, nodeType := range graphType.NodeTypeSet {
@@ -72,7 +56,13 @@ func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) 
 		}
 		label := nodeType.NodeTypeLabelSet[0]
 
-		objects, err := processProperties(nodeEntityType, label, nodeType.PropertyTypeSet, opts)
+		nodeSchemaObjects, err := transmogrifyNode(nodeType, meta)
+		if err != nil {
+			return nil, fmt.Errorf("error transmogrifying node type: %w", err)
+		}
+		schemaObjects = append(schemaObjects, nodeSchemaObjects...)
+
+		objects, err := processProperties(transmog.Transmogrifiers, transmog.NodeEntityType, label, nodeType.PropertyTypeSet, &meta)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
@@ -85,13 +75,13 @@ func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) 
 		}
 		label := edgeType.EdgeTypeLabelSet[0]
 
-		edgeTypeObjects, err := processEdgeType(label, edgeType, opts)
+		edgeSchemaObjects, err := transmogrifyEdge(edgeType, meta)
 		if err != nil {
-			return nil, fmt.Errorf("error processing edge type: %w", err)
+			return nil, fmt.Errorf("error transmogrifying edge type: %w", err)
 		}
-		schemaObjects = append(schemaObjects, edgeTypeObjects...)
+		schemaObjects = append(schemaObjects, edgeSchemaObjects...)
 
-		propertyObjects, err := processProperties(edgeEntityType, label, edgeType.EdgeTypePropertySet, opts)
+		propertyObjects, err := processProperties(transmog.Transmogrifiers, transmog.EdgeEntityType, label, edgeType.EdgeTypePropertySet, &meta)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
@@ -101,207 +91,103 @@ func Convert(graphType *gql.GraphType, opts Opts) ([]neo4j.SchemaObject, error) 
 	return schemaObjects, nil
 }
 
-// processEdgeType processes the edge type and returns the corresponding Neo4j schema objects.
-func processEdgeType(label string, edgeType *gql.EdgeType, opts Opts) ([]neo4j.SchemaObject, error) {
-	if !opts.ApocEnabled {
-		return []neo4j.SchemaObject{}, nil
-	}
-
-	sourceLabelSet := edgeType.SourceNodeType.NodeTypeLabelSet
-	if len(sourceLabelSet) != 1 {
-		return nil, fmt.Errorf("error Neo4j only supports one label per source node type: %w", ErrUnsupported)
-	}
-	startNodeType := sourceLabelSet[0]
-
-	destinationLabelSet := edgeType.DestinationNodeType.NodeTypeLabelSet
-	if len(destinationLabelSet) != 1 {
-		return nil, fmt.Errorf("error Neo4j only supports one label per destination node type: %w", ErrUnsupported)
-	}
-	endNodeType := destinationLabelSet[0]
-
-	edgeEndpointTrigger, err := newEdgeEndpointTrigger(label, startNodeType, endNodeType)
-	if err != nil {
-		return nil, fmt.Errorf("error creating edge endpoint trigger: %w", err)
-	}
-
-	return []neo4j.SchemaObject{edgeEndpointTrigger}, nil
-}
-
 // processProperties processes properties for a given label and version.
-func processProperties(t entityType, label string, properties []*gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
+func processProperties(transmogrifiers []transmog.Transmogrifier, entityType transmog.EntityType, label string, properties []*gql.PropertyType, meta *transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
-	for _, prop := range properties {
-		typeConstraints, err := buildTypeConstraint(t, label, prop, opts)
-		if err != nil {
-			return nil, fmt.Errorf("error building type constraint: %w", err)
-		}
-		schemaObjects = append(schemaObjects, typeConstraints...)
-
-		var pattern string
-		switch t {
-		case nodeEntityType:
-			pattern = fmt.Sprintf("(n:%s)", label)
-		case edgeEntityType:
-			pattern = fmt.Sprintf("(n:%s)", label)
-		}
-
-		// FIXME: Properly handle constraints on edges not just nodes
-		if !prop.PropertyValueType.IsNullable() {
-			schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
-				Name:         mustFormatName("existence", label, prop.PropertyName),
-				Pattern:      pattern,
-				PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
-			})
-		}
-
-		if extendedAttrs := prop.ExtendedAttributes; extendedAttrs != nil {
-			if extendedAttrs.IsPrimaryKey {
-				schemaObjects = append(schemaObjects, &constraints.PropertyExistenceConstraint{
-					Name:         mustFormatName("primary_key", label, prop.PropertyName),
-					Pattern:      pattern,
-					PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
-				})
+	for _, property := range properties {
+		for _, transmogrifier := range transmogrifiers {
+			propertyTransmogrifier, ok := transmogrifier.(transmog.PropertyTransmogrifier)
+			if !ok {
+				continue
 			}
-			if extendedAttrs.IsUnique {
-				schemaObjects = append(schemaObjects, &constraints.PropertyUniquenessConstraint{
-					Name:         mustFormatName("unique", label, prop.PropertyName),
-					Pattern:      pattern,
-					PropertyName: fmt.Sprintf("n.%s", prop.PropertyName),
-				})
+
+			isCompatible, err := propertyTransmogrifier.IsCompatible(meta)
+			if err != nil {
+				return nil, fmt.Errorf("error checking compatibility: %w", err)
 			}
-			// TODO: Implement check constraints
-			// if extendedAttrs.CheckConstraint != nil {
-			// }
+			if !isCompatible {
+				continue
+			}
+
+			transmogrifiedObjects, err := propertyTransmogrifier.TransmogrifyProperty(entityType, label, property)
+			if err != nil {
+				return nil, fmt.Errorf("error transmogrifying property: %w", err)
+			}
+			schemaObjects = append(schemaObjects, transmogrifiedObjects...)
 		}
 	}
 
 	return schemaObjects, nil
 }
 
-// buildTypeConstraint returns a property type constraint if the Neo4j version supports it.
-func buildTypeConstraint(t entityType, label string, property *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
-	supported, err := isVersionSupported(opts.Neo4jVersion, "5.9")
-	if err != nil {
-		return nil, fmt.Errorf("version check failed: %w", err)
-	}
-	if !supported {
-		log.Printf("Property type constraints unsupported in Neo4j version %s\n", opts.Neo4jVersion)
-		return nil, nil
-	}
-
-	// TODO: Technically we can create APOC triggers on older versions
-	return createPropertyTypeConstraint(t, label, property, opts)
-}
-
-// createPropertyTypeConstraint maps the GQL type and builds a constraint.
-func createPropertyTypeConstraint(entityType entityType, label string, propertyType *gql.PropertyType, opts Opts) ([]neo4j.SchemaObject, error) {
+func transmogrifyNode(nodeType *gql.NodeType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
-
-	switch valueType := propertyType.PropertyValueType.(type) {
-	case *datatype.CharacterStringDataTypeDescriptor:
-		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         mustFormatName("type", label, propertyType.PropertyName),
-			Pattern:      fmt.Sprintf("(n:%s)", label),
-			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
-			PropertyType: string(neo4j.String),
-		})
-		if opts.ApocEnabled && (valueType.MinLength != 0 || valueType.MaxLength != 0) {
-			trigger, err := newStringLengthTrigger(entityType, label, propertyType.PropertyName, valueType.MinLength, valueType.MaxLength)
-			if err != nil {
-				return nil, fmt.Errorf("error creating string length trigger: %w", err)
-			}
-			schemaObjects = append(schemaObjects, trigger)
-		}
-	case *datatype.NumericDataTypeDescriptor:
-		if valueType.Precision >= 64 {
-			return nil, fmt.Errorf("error Neo4j does not support precision >= 64 for numeric types: %w", ErrUnsupported)
-		}
-		if valueType.Scale != 0 {
-			return nil, fmt.Errorf("error Neo4j does not support scale for numeric types: %w", ErrUnsupported)
+	for _, transmogrifier := range transmog.Transmogrifiers {
+		nodeTransmogrifier, ok := transmogrifier.(transmog.NodeTransmogrifier)
+		if !ok {
+			continue
 		}
 
-		var propertyT neo4j.PropertyType
-		switch valueType.Kind {
-		case datatype.NumericKindExact:
-			propertyT = neo4j.Integer
-		case datatype.NumericKindFloat:
-			propertyT = neo4j.Float
-		}
-
-		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         mustFormatName("type", label, propertyType.PropertyName),
-			Pattern:      fmt.Sprintf("(n:%s)", label),
-			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
-			PropertyType: string(propertyT),
-		})
-
-		if opts.ApocEnabled && valueType.Precision != 0 && valueType.Precision != 63 {
-			trigger, err := newNumericRangeTrigger(entityType, label, propertyType.PropertyName, valueType.Precision)
-			if err != nil {
-				return nil, fmt.Errorf("error creating numeric range trigger: %w", err)
-			}
-			schemaObjects = append(schemaObjects, trigger)
-
-		}
-	case *datatype.MiscellaneousDataTypeDescriptor:
-		t, err := mapMiscGQLTypeToNeo4j(valueType.Kind)
+		isCompatible, err := nodeTransmogrifier.IsCompatible(&meta)
 		if err != nil {
-			return nil, fmt.Errorf("error mapping GQL type to Neo4j: %w", err)
+			return nil, fmt.Errorf("error checking compatibility: %w", err)
 		}
-		schemaObjects = append(schemaObjects, &constraints.PropertyTypeConstraint{
-			Name:         mustFormatName("type", label, propertyType.PropertyName),
-			Pattern:      fmt.Sprintf("(n:%s)", label),
-			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
-			PropertyType: string(t),
-		})
-	case *datatype.ByteStringDataTypeDescriptor:
-		return nil, fmt.Errorf("error Neo4j does not support byte string type: %w", ErrUnsupported)
-	default:
-		return nil, fmt.Errorf("error unsupported GQL type: %s", valueType)
-	}
 
+		if !isCompatible {
+			continue
+		}
+
+		transmogrifiedObjects, err := nodeTransmogrifier.TransmogrifyNode(nodeType)
+		if err != nil {
+			return nil, fmt.Errorf("error transmogrifying node type: %w", err)
+		}
+		schemaObjects = append(schemaObjects, transmogrifiedObjects...)
+	}
 	return schemaObjects, nil
 }
 
-// mustFormatName formats the name of a constraint or trigger.
-func mustFormatName(prefix string, components ...string) string {
-	if len(components) == 0 {
-		panic("mustFormatName requires at least one component")
-	}
-
-	var b strings.Builder
-	b.WriteString(prefix)
-	b.WriteString("_")
-
-	for i, component := range components {
-		if i > 0 {
-			b.WriteString("_")
+func transmogrifyEdge(edgeType *gql.EdgeType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+	var schemaObjects []neo4j.SchemaObject
+	for _, transmogrifier := range transmog.Transmogrifiers {
+		nodeTransmogrifier, ok := transmogrifier.(transmog.EdgeTransmogrifier)
+		if !ok {
+			continue
 		}
-		b.WriteString(component)
-	}
 
-	return strings.ToLower(b.String())
+		isCompatible, err := nodeTransmogrifier.IsCompatible(&meta)
+		if err != nil {
+			return nil, fmt.Errorf("error checking compatibility: %w", err)
+		}
+
+		if !isCompatible {
+			continue
+		}
+
+		transmogrifiedObjects, err := nodeTransmogrifier.TransmogrifyEdge(edgeType)
+		if err != nil {
+			return nil, fmt.Errorf("error transmogrifying edge type: %w", err)
+		}
+		schemaObjects = append(schemaObjects, transmogrifiedObjects...)
+	}
+	return schemaObjects, nil
 }
 
-// mapMiscGQLTypeToNeo4j handles miscellaneous GQL types.
-func mapMiscGQLTypeToNeo4j(kind string) (neo4j.PropertyType, error) {
-	switch strings.ToUpper(kind) {
-	case "BOOL", "BOOLEAN":
-		return neo4j.Boolean, nil
-	case "DATE":
-		return neo4j.Date, nil
-	case "ZONED DATETIME", "TIMESTAMP WITH TIME ZONE":
-		return neo4j.ZonedDateTime, nil
-	case "LOCAL DATETIME", "TIMESTAMP", "TIMESTAMP WITHOUT TIME ZONE":
-		return neo4j.LocalDateTime, nil
-	case "ZONED TIME", "TIME WITH TIME ZONE":
-		return neo4j.ZonedTime, nil
-	case "LOCAL TIME", "TIME WITHOUT TIME ZONE":
-		return neo4j.LocalTime, nil
-	case "DURATION":
-		return neo4j.Duration, nil
-	default:
-		return "", fmt.Errorf("error unsupported GQL type: %s", kind)
+// parseGQL parses a GQL input string into a listener structure.
+func parseGQL(input string) (*gql.CreateGraphStatementListener, error) {
+	lexer := parser.NewGQLLexer(antlr.NewInputStream(input))
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+	p := parser.NewGQLParser(stream)
+
+	errorListener := &gql.ErrorListener{}
+	p.AddErrorListener(errorListener)
+
+	createGraphTypeListener := &gql.CreateGraphStatementListener{}
+	antlr.ParseTreeWalkerDefault.Walk(createGraphTypeListener, p.GqlProgram())
+
+	if len(errorListener.SyntaxErrors) > 0 {
+		return nil, fmt.Errorf("syntax errors: %v", errorListener.SyntaxErrors)
 	}
+
+	return createGraphTypeListener, nil
 }
