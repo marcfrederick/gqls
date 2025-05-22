@@ -1,4 +1,4 @@
-package transmog
+package convert
 
 // Neo4jEdition represents the edition of the Neo4j database.
 type Neo4jEdition uint8

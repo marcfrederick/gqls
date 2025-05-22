@@ -12,7 +12,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/transmog"
+	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
 	"github.com/marcfrederick/gqls/internal/web"
 )
 
@@ -81,7 +81,7 @@ func run(_ context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to read input: %w", err)
 	}
 
-	converted, err := gql2neo4j.ConvertBytes(content, transmog.DatabaseMetadata{
+	converted, err := gql2neo4j.ConvertBytes(content, convert.DatabaseMetadata{
 		Version:     cmd.String("neo4j-version"),
 		APOCEnabled: cmd.Bool("apoc"),
 	})

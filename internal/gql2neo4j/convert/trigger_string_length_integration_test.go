@@ -1,6 +1,6 @@
 //go:build integration
 
-package transmog
+package convert
 
 import (
 	"testing"

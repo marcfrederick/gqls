@@ -12,7 +12,7 @@ import (
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/gql/datatype"
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/transmog"
+	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
 	"github.com/marcfrederick/gqls/internal/neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
@@ -34,7 +34,7 @@ func TestConvertString(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			tc := loadTestCase(t, path)
 
-			got, err := gql2neo4j.ConvertString(tc.Input, transmog.DatabaseMetadata{APOCEnabled: true})
+			got, err := gql2neo4j.ConvertString(tc.Input, convert.DatabaseMetadata{APOCEnabled: true})
 			if err != nil {
 				t.Fatalf("ConvertString() returned error: %v", err)
 			}
@@ -49,7 +49,7 @@ func TestConvertString(t *testing.T) {
 func TestConvert(t *testing.T) {
 	type args struct {
 		graphType *gql.GraphType
-		opts      transmog.DatabaseMetadata
+		opts      convert.DatabaseMetadata
 	}
 	tests := []struct {
 		name    string
@@ -91,7 +91,7 @@ func TestConvert(t *testing.T) {
 						},
 					},
 				},
-				opts: transmog.DatabaseMetadata{
+				opts: convert.DatabaseMetadata{
 					APOCEnabled: true,
 				},
 			},
@@ -139,7 +139,7 @@ func TestConvert(t *testing.T) {
 						},
 					},
 				},
-				opts: transmog.DatabaseMetadata{
+				opts: convert.DatabaseMetadata{
 					Version:     "5.8",
 					APOCEnabled: true,
 				},

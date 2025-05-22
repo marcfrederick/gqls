@@ -1,5 +1,4 @@
-// Package transmog provides functionality to convert GQL schema objects into Neo4j schema objects.
-package transmog
+package convert
 
 import (
 	"fmt"
@@ -9,15 +8,15 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 )
 
-var _ PropertyTransmogrifier = (*existenceConstraintTransmogrifier)(nil)
+var _ PropertyConverter = (*existenceConstraintConverter)(nil)
 
-type existenceConstraintTransmogrifier struct{}
+type existenceConstraintConverter struct{}
 
-func (t *existenceConstraintTransmogrifier) IsCompatible(meta *DatabaseMetadata) (bool, error) {
+func (t *existenceConstraintConverter) IsCompatible(meta *DatabaseMetadata) (bool, error) {
 	return meta.Edition == Neo4jEnterpriseEdition, nil
 }
 
-func (t *existenceConstraintTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *existenceConstraintConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	if propertyType.PropertyValueType.IsNullable() {
 		return nil, nil
 	}

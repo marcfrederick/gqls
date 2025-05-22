@@ -1,4 +1,4 @@
-package transmog
+package convert
 
 import (
 	"fmt"
@@ -10,11 +10,11 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 )
 
-var _ PropertyTransmogrifier = (*typeConstraintTransmogrifier)(nil)
+var _ PropertyConverter = (*typeConstraintConverter)(nil)
 
-type typeConstraintTransmogrifier struct{}
+type typeConstraintConverter struct{}
 
-func (t *typeConstraintTransmogrifier) IsCompatible(meta *DatabaseMetadata) (bool, error) {
+func (t *typeConstraintConverter) IsCompatible(meta *DatabaseMetadata) (bool, error) {
 	editionSupported := meta.Edition == Neo4jEnterpriseEdition
 
 	versionSupported, err := isVersionSupported(meta.Version, "5.9")
@@ -25,7 +25,7 @@ func (t *typeConstraintTransmogrifier) IsCompatible(meta *DatabaseMetadata) (boo
 	return editionSupported && versionSupported, nil
 }
 
-func (t *typeConstraintTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *typeConstraintConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	var neo4jType neo4j.PropertyType
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor:

@@ -1,4 +1,4 @@
-package transmog
+package convert
 
 import (
 	"fmt"
@@ -10,15 +10,15 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
 )
 
-var _ PropertyTransmogrifier = (*numericRangeTriggerTransmogrifier)(nil)
+var _ PropertyConverter = (*numericRangeTriggerConverter)(nil)
 
-type numericRangeTriggerTransmogrifier struct{}
+type numericRangeTriggerConverter struct{}
 
-func (p *numericRangeTriggerTransmogrifier) IsCompatible(meta *DatabaseMetadata) (bool, error) {
+func (p *numericRangeTriggerConverter) IsCompatible(meta *DatabaseMetadata) (bool, error) {
 	return meta.APOCEnabled, nil
 }
 
-func (p *numericRangeTriggerTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (p *numericRangeTriggerConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	typeDesc, ok := propertyType.PropertyValueType.(*datatype.NumericDataTypeDescriptor)
 	if !ok {
 		return nil, nil

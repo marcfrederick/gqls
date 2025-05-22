@@ -1,4 +1,4 @@
-package transmog
+package convert
 
 import (
 	"fmt"
@@ -8,15 +8,15 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
 )
 
-var _ EdgeTransmogrifier = (*edgeEndpointsTriggerTransmogrifier)(nil)
+var _ EdgeConverter = (*edgeEndpointsTriggerConverter)(nil)
 
-type edgeEndpointsTriggerTransmogrifier struct{}
+type edgeEndpointsTriggerConverter struct{}
 
-func (p *edgeEndpointsTriggerTransmogrifier) IsCompatible(meta *DatabaseMetadata) (bool, error) {
+func (p *edgeEndpointsTriggerConverter) IsCompatible(meta *DatabaseMetadata) (bool, error) {
 	return meta.APOCEnabled, nil
 }
 
-func (p *edgeEndpointsTriggerTransmogrifier) TransmogrifyEdge(edgeType *gql.EdgeType) ([]neo4j.SchemaObject, error) {
+func (p *edgeEndpointsTriggerConverter) ConvertEdge(edgeType *gql.EdgeType) ([]neo4j.SchemaObject, error) {
 	if len(edgeType.EdgeTypeLabelSet) != 1 {
 		return nil, fmt.Errorf("error Neo4j only supports one label per edge type")
 	}

@@ -1,4 +1,4 @@
-package transmog
+package convert
 
 import (
 	"fmt"
@@ -9,15 +9,15 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
 )
 
-var _ PropertyTransmogrifier = (*stringLengthTriggerTransmogrifier)(nil)
+var _ PropertyConverter = (*stringLengthTriggerConverter)(nil)
 
-type stringLengthTriggerTransmogrifier struct{}
+type stringLengthTriggerConverter struct{}
 
-func (p *stringLengthTriggerTransmogrifier) IsCompatible(meta *DatabaseMetadata) (bool, error) {
+func (p *stringLengthTriggerConverter) IsCompatible(meta *DatabaseMetadata) (bool, error) {
 	return meta.APOCEnabled, nil
 }
 
-func (p *stringLengthTriggerTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (p *stringLengthTriggerConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	typeDesc, ok := propertyType.PropertyValueType.(*datatype.CharacterStringDataTypeDescriptor)
 	if !ok {
 		return nil, nil

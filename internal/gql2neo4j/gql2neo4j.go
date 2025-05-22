@@ -9,12 +9,12 @@ import (
 
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/gql/parser"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/transmog"
+	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
 	"github.com/marcfrederick/gqls/internal/neo4j"
 )
 
 // ConvertBytes parses a GQL schema and generates Neo4j constraints for the specified version.
-func ConvertBytes(data []byte, meta transmog.DatabaseMetadata) ([]byte, error) {
+func ConvertBytes(data []byte, meta convert.DatabaseMetadata) ([]byte, error) {
 	result, err := ConvertString(string(data), meta)
 	if err != nil {
 		return nil, fmt.Errorf("error converting GQL to Neo4j: %w", err)
@@ -23,7 +23,7 @@ func ConvertBytes(data []byte, meta transmog.DatabaseMetadata) ([]byte, error) {
 }
 
 // ConvertString parses a GQL schema and generates Neo4j constraints for the specified version.
-func ConvertString(data string, meta transmog.DatabaseMetadata) (string, error) {
+func ConvertString(data string, meta convert.DatabaseMetadata) (string, error) {
 	parsed, err := parseGQL(data)
 	if err != nil {
 		return "", fmt.Errorf("error parsing GQL: %w", err)
@@ -44,7 +44,7 @@ func ConvertString(data string, meta transmog.DatabaseMetadata) (string, error) 
 }
 
 // Convert builds Neo4j constraints from a GQL GraphType definition.
-func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+func Convert(graphType *gql.GraphType, meta convert.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, nodeType := range graphType.NodeTypeSet {
@@ -53,13 +53,13 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 		}
 		label := nodeType.NodeTypeLabelSet[0]
 
-		nodeSchemaObjects, err := transmogrifyNode(nodeType, meta)
+		nodeSchemaObjects, err := convertNode(nodeType, meta)
 		if err != nil {
-			return nil, fmt.Errorf("error transmogrifying node type: %w", err)
+			return nil, fmt.Errorf("error converting node type: %w", err)
 		}
 		schemaObjects = append(schemaObjects, nodeSchemaObjects...)
 
-		objects, err := processProperties(transmog.NodeEntityType, label, nodeType.PropertyTypeSet, &meta)
+		objects, err := processProperties(convert.NodeEntityType, label, nodeType.PropertyTypeSet, &meta)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
@@ -72,13 +72,13 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 		}
 		label := edgeType.EdgeTypeLabelSet[0]
 
-		edgeSchemaObjects, err := transmogrifyEdge(edgeType, meta)
+		edgeSchemaObjects, err := convertEdge(edgeType, meta)
 		if err != nil {
-			return nil, fmt.Errorf("error transmogrifying edge type: %w", err)
+			return nil, fmt.Errorf("error converting edge type: %w", err)
 		}
 		schemaObjects = append(schemaObjects, edgeSchemaObjects...)
 
-		propertyObjects, err := processProperties(transmog.EdgeEntityType, label, edgeType.EdgeTypePropertySet, &meta)
+		propertyObjects, err := processProperties(convert.EdgeEntityType, label, edgeType.EdgeTypePropertySet, &meta)
 		if err != nil {
 			return nil, fmt.Errorf("error processing properties: %w", err)
 		}
@@ -89,12 +89,12 @@ func Convert(graphType *gql.GraphType, meta transmog.DatabaseMetadata) ([]neo4j.
 }
 
 // processProperties processes properties for a given label and version.
-func processProperties(entityType transmog.EntityType, label string, properties []*gql.PropertyType, meta *transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+func processProperties(entityType convert.EntityType, label string, properties []*gql.PropertyType, meta *convert.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, property := range properties {
-		for _, propertyTransmogrifier := range transmog.Transmogrifiers[transmog.PropertyTransmogrifier]() {
-			isCompatible, err := propertyTransmogrifier.IsCompatible(meta)
+		for _, propertyConverter := range convert.Converters[convert.PropertyConverter]() {
+			isCompatible, err := propertyConverter.IsCompatible(meta)
 			if err != nil {
 				return nil, fmt.Errorf("error checking compatibility: %w", err)
 			}
@@ -102,21 +102,21 @@ func processProperties(entityType transmog.EntityType, label string, properties 
 				continue
 			}
 
-			transmogrifiedObjects, err := propertyTransmogrifier.TransmogrifyProperty(entityType, label, property)
+			convertedObjects, err := propertyConverter.ConvertProperty(entityType, label, property)
 			if err != nil {
-				return nil, fmt.Errorf("error transmogrifying property: %w", err)
+				return nil, fmt.Errorf("error converting property: %w", err)
 			}
-			schemaObjects = append(schemaObjects, transmogrifiedObjects...)
+			schemaObjects = append(schemaObjects, convertedObjects...)
 		}
 	}
 
 	return schemaObjects, nil
 }
 
-func transmogrifyNode(nodeType *gql.NodeType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+func convertNode(nodeType *gql.NodeType, meta convert.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
-	for _, nodeTransmogrifier := range transmog.Transmogrifiers[transmog.NodeTransmogrifier]() {
-		isCompatible, err := nodeTransmogrifier.IsCompatible(&meta)
+	for _, nodeConverter := range convert.Converters[convert.NodeConverter]() {
+		isCompatible, err := nodeConverter.IsCompatible(&meta)
 		if err != nil {
 			return nil, fmt.Errorf("error checking compatibility: %w", err)
 		}
@@ -125,19 +125,19 @@ func transmogrifyNode(nodeType *gql.NodeType, meta transmog.DatabaseMetadata) ([
 			continue
 		}
 
-		transmogrifiedObjects, err := nodeTransmogrifier.TransmogrifyNode(nodeType)
+		convertedObjects, err := nodeConverter.ConvertNode(nodeType)
 		if err != nil {
-			return nil, fmt.Errorf("error transmogrifying node type: %w", err)
+			return nil, fmt.Errorf("error converting node type: %w", err)
 		}
-		schemaObjects = append(schemaObjects, transmogrifiedObjects...)
+		schemaObjects = append(schemaObjects, convertedObjects...)
 	}
 	return schemaObjects, nil
 }
 
-func transmogrifyEdge(edgeType *gql.EdgeType, meta transmog.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+func convertEdge(edgeType *gql.EdgeType, meta convert.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
-	for _, edgeTransmogrifier := range transmog.Transmogrifiers[transmog.EdgeTransmogrifier]() {
-		isCompatible, err := edgeTransmogrifier.IsCompatible(&meta)
+	for _, edgeConverter := range convert.Converters[convert.EdgeConverter]() {
+		isCompatible, err := edgeConverter.IsCompatible(&meta)
 		if err != nil {
 			return nil, fmt.Errorf("error checking compatibility: %w", err)
 		}
@@ -146,11 +146,11 @@ func transmogrifyEdge(edgeType *gql.EdgeType, meta transmog.DatabaseMetadata) ([
 			continue
 		}
 
-		transmogrifiedObjects, err := edgeTransmogrifier.TransmogrifyEdge(edgeType)
+		convertedObjects, err := edgeConverter.ConvertEdge(edgeType)
 		if err != nil {
-			return nil, fmt.Errorf("error transmogrifying edge type: %w", err)
+			return nil, fmt.Errorf("error converting edge type: %w", err)
 		}
-		schemaObjects = append(schemaObjects, transmogrifiedObjects...)
+		schemaObjects = append(schemaObjects, convertedObjects...)
 	}
 	return schemaObjects, nil
 }

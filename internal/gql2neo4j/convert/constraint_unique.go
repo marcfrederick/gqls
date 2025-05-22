@@ -1,4 +1,4 @@
-package transmog
+package convert
 
 import (
 	"fmt"
@@ -8,15 +8,15 @@ import (
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
 )
 
-var _ PropertyTransmogrifier = (*uniqueConstraintTransmogrifier)(nil)
+var _ PropertyConverter = (*uniqueConstraintConverter)(nil)
 
-type uniqueConstraintTransmogrifier struct{}
+type uniqueConstraintConverter struct{}
 
-func (t *uniqueConstraintTransmogrifier) IsCompatible(_ *DatabaseMetadata) (bool, error) {
+func (t *uniqueConstraintConverter) IsCompatible(_ *DatabaseMetadata) (bool, error) {
 	return true, nil
 }
 
-func (t *uniqueConstraintTransmogrifier) TransmogrifyProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *uniqueConstraintConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	if propertyType.ExtendedAttributes == nil || !propertyType.ExtendedAttributes.IsUnique {
 		return nil, nil
 	}

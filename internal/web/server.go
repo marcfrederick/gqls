@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/transmog"
+	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
 )
 
 //go:embed static/*
@@ -62,7 +62,7 @@ func Serve(addr string) error {
 			return
 		}
 
-		neo4j, err := gql2neo4j.ConvertString(req.GQL, transmog.DatabaseMetadata{
+		neo4j, err := gql2neo4j.ConvertString(req.GQL, convert.DatabaseMetadata{
 			Version:     req.Neo4jVersion,
 			APOCEnabled: req.ApocEnabled,
 		})
