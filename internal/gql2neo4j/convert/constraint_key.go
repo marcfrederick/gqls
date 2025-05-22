@@ -21,11 +21,28 @@ func (t *keyConstraintConverter) ConvertProperty(entityType EntityType, label st
 		return nil, nil
 	}
 
+	subjectType, ok := mapSubjectType(entityType)
+	if !ok {
+		return nil, fmt.Errorf("unsupported entity type for key constraint")
+	}
+
 	return []neo4j.SchemaObject{
 		&constraints.KeyConstraint{
 			Name:         mustFormatName("key", label, propertyType.PropertyName),
 			Pattern:      getPattern(entityType, "n", label),
 			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
+			SubjectType:  subjectType,
 		},
 	}, nil
+}
+
+func mapSubjectType(entityType EntityType) (constraints.SubjectType, bool) {
+	switch entityType {
+	case NodeEntityType:
+		return constraints.NodeType, true
+	case EdgeEntityType:
+		return constraints.RelationshipType, true
+	default:
+		return constraints.SubjectType(0), false
+	}
 }
