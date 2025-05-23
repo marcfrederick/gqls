@@ -2,6 +2,12 @@ package gql
 
 import "github.com/marcfrederick/gqls/internal/gql/datatype"
 
+// ExtendedElementAttributes represents extended element attributes.
+type ExtendedElementAttributes struct {
+	CompositePrimaryKeyFields      []string
+	CompositeCheckConstraintFields []string
+}
+
 // ExtendedPropertyAttributes represents extended property attributes.
 type ExtendedPropertyAttributes struct {
 	IsPrimaryKey    bool
@@ -18,9 +24,10 @@ type PropertyType struct {
 
 // NodeType represents a node type.
 type NodeType struct {
-	Alias            string
-	NodeTypeLabelSet []string
-	PropertyTypeSet  []*PropertyType
+	Alias              string
+	NodeTypeLabelSet   []string
+	PropertyTypeSet    []*PropertyType
+	ExtendedAttributes *ExtendedElementAttributes
 }
 
 // Cardinality represents the cardinality of a node type.
@@ -61,6 +68,8 @@ type EdgeType struct {
 	DestinationCardinality *Cardinality
 	// Kind is the edge type stringKind (directed or undirected).
 	Kind EdgeKind
+	// ExtendedAttributes represents extended attributes of the edge type.
+	ExtendedAttributes *ExtendedElementAttributes
 }
 
 // GraphType represents a graph type as a collection of node and edge type specifications.

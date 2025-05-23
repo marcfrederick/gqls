@@ -1958,6 +1958,24 @@ func (s *BaseGQLListener) EnterElementTypeSpecification(ctx *ElementTypeSpecific
 // ExitElementTypeSpecification is called when production elementTypeSpecification is exited.
 func (s *BaseGQLListener) ExitElementTypeSpecification(ctx *ElementTypeSpecificationContext) {}
 
+// EnterCompositePrimaryKey is called when production compositePrimaryKey is entered.
+func (s *BaseGQLListener) EnterCompositePrimaryKey(ctx *CompositePrimaryKeyContext) {}
+
+// ExitCompositePrimaryKey is called when production compositePrimaryKey is exited.
+func (s *BaseGQLListener) ExitCompositePrimaryKey(ctx *CompositePrimaryKeyContext) {}
+
+// EnterCompositeUniqueConstraint is called when production compositeUniqueConstraint is entered.
+func (s *BaseGQLListener) EnterCompositeUniqueConstraint(ctx *CompositeUniqueConstraintContext) {}
+
+// ExitCompositeUniqueConstraint is called when production compositeUniqueConstraint is exited.
+func (s *BaseGQLListener) ExitCompositeUniqueConstraint(ctx *CompositeUniqueConstraintContext) {}
+
+// EnterFieldNameList is called when production fieldNameList is entered.
+func (s *BaseGQLListener) EnterFieldNameList(ctx *FieldNameListContext) {}
+
+// ExitFieldNameList is called when production fieldNameList is exited.
+func (s *BaseGQLListener) ExitFieldNameList(ctx *FieldNameListContext) {}
+
 // EnterNodeTypeSpecification is called when production nodeTypeSpecification is entered.
 func (s *BaseGQLListener) EnterNodeTypeSpecification(ctx *NodeTypeSpecificationContext) {}
 

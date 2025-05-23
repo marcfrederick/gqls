@@ -13,10 +13,28 @@ import (
 
 // parseElementTypeSpecification parses the element type specification from the context.
 func parseElementTypeSpecification(elementTypeSpec parser.IElementTypeSpecificationContext, graphType *GraphType) error {
+	var compositePrimaryKeyFields []string
+	if compositePrimaryKey := elementTypeSpec.CompositePrimaryKey(); compositePrimaryKey != nil {
+		for _, propertyName := range compositePrimaryKey.FieldNameList().AllFieldName() {
+			compositePrimaryKeyFields = append(compositePrimaryKeyFields, propertyName.Identifier().GetText())
+		}
+	}
+
+	var compositeUniqueConstraintFields []string
+	if compositeUniqueConstraint := elementTypeSpec.CompositeUniqueConstraint(); compositeUniqueConstraint != nil {
+		for _, propertyName := range compositeUniqueConstraint.FieldNameList().AllFieldName() {
+			compositeUniqueConstraintFields = append(compositeUniqueConstraintFields, propertyName.Identifier().GetText())
+		}
+	}
+
 	if nodeTypeSpec := elementTypeSpec.NodeTypeSpecification(); nodeTypeSpec != nil {
 		nodeType, err := parseNodeTypeSpecification(nodeTypeSpec)
 		if err != nil {
 			return fmt.Errorf("error parsing node type nodeType: %w", err)
+		}
+		nodeType.ExtendedAttributes = &ExtendedElementAttributes{
+			CompositePrimaryKeyFields:      compositePrimaryKeyFields,
+			CompositeCheckConstraintFields: compositeUniqueConstraintFields,
 		}
 		graphType.NodeTypeSet = append(graphType.NodeTypeSet, nodeType)
 	}
@@ -25,6 +43,10 @@ func parseElementTypeSpecification(elementTypeSpec parser.IElementTypeSpecificat
 		edgeType, err := parseEdgeTypeSpecification(edgeTypeSpec)
 		if err != nil {
 			return fmt.Errorf("error parsing edge type edgeType: %w", err)
+		}
+		edgeType.ExtendedAttributes = &ExtendedElementAttributes{
+			CompositePrimaryKeyFields:      compositePrimaryKeyFields,
+			CompositeCheckConstraintFields: compositeUniqueConstraintFields,
 		}
 		graphType.EdgeTypeSet = append(graphType.EdgeTypeSet, edgeType)
 	}

@@ -2,12 +2,21 @@ package convert
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
 	"strings"
 	"text/template"
 )
+
+// getPrimaryLabel retrieves the first label from a label set.
+func getPrimaryLabel(labelSet []string) (string, error) {
+	if len(labelSet) == 0 {
+		return "", errors.New("no labelSet found")
+	}
+	return labelSet[0], nil
+}
 
 // isVersionSupported checks if the current Neo4j version satisfies the minimum requirement.
 func isVersionSupported(current, minimum string) (bool, error) {

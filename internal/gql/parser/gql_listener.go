@@ -919,6 +919,15 @@ type GQLListener interface {
 	// EnterElementTypeSpecification is called when entering the elementTypeSpecification production.
 	EnterElementTypeSpecification(c *ElementTypeSpecificationContext)
 
+	// EnterCompositePrimaryKey is called when entering the compositePrimaryKey production.
+	EnterCompositePrimaryKey(c *CompositePrimaryKeyContext)
+
+	// EnterCompositeUniqueConstraint is called when entering the compositeUniqueConstraint production.
+	EnterCompositeUniqueConstraint(c *CompositeUniqueConstraintContext)
+
+	// EnterFieldNameList is called when entering the fieldNameList production.
+	EnterFieldNameList(c *FieldNameListContext)
+
 	// EnterNodeTypeSpecification is called when entering the nodeTypeSpecification production.
 	EnterNodeTypeSpecification(c *NodeTypeSpecificationContext)
 
@@ -2784,6 +2793,15 @@ type GQLListener interface {
 
 	// ExitElementTypeSpecification is called when exiting the elementTypeSpecification production.
 	ExitElementTypeSpecification(c *ElementTypeSpecificationContext)
+
+	// ExitCompositePrimaryKey is called when exiting the compositePrimaryKey production.
+	ExitCompositePrimaryKey(c *CompositePrimaryKeyContext)
+
+	// ExitCompositeUniqueConstraint is called when exiting the compositeUniqueConstraint production.
+	ExitCompositeUniqueConstraint(c *CompositeUniqueConstraintContext)
+
+	// ExitFieldNameList is called when exiting the fieldNameList production.
+	ExitFieldNameList(c *FieldNameListContext)
 
 	// ExitNodeTypeSpecification is called when exiting the nodeTypeSpecification production.
 	ExitNodeTypeSpecification(c *NodeTypeSpecificationContext)

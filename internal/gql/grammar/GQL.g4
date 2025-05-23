@@ -1501,10 +1501,22 @@ elementTypeList
     : elementTypeSpecification (COMMA elementTypeSpecification)*
     ;
 
+// BEGIN MODIFIED
 elementTypeSpecification
-    : nodeTypeSpecification
-    | edgeTypeSpecification
+    : (nodeTypeSpecification | edgeTypeSpecification) (compositePrimaryKey | compositeUniqueConstraint)?
     ;
+compositePrimaryKey
+    : primaryKey LEFT_PAREN fieldNameList RIGHT_PAREN
+    ;
+
+compositeUniqueConstraint
+    : UNIQUE LEFT_PAREN fieldNameList RIGHT_PAREN
+    ;
+
+fieldNameList
+    : fieldName (COMMA fieldName)*
+    ;
+// END MODIFIED
 
 // 18.2 <node type specification>
 
