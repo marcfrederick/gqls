@@ -55,7 +55,8 @@ func (t *typeConstraintConverter) ConvertProperty(entityType EntityType, label s
 		&constraints.PropertyTypeConstraint{
 			Name:         mustFormatName("type", label, propertyType.PropertyName),
 			Pattern:      getPattern(entityType, "n", label),
-			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
+			Alias:        "n",
+			PropertyName: propertyType.PropertyName,
 			PropertyType: string(neo4jType),
 		},
 	}, nil

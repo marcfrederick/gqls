@@ -45,10 +45,11 @@ func Test_keyConstraintConverter_ConvertNode(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:         "key_id_email",
-					Pattern:      getPattern(NodeEntityType, "n", "Person"),
-					PropertyName: "(n.id, n.email)",
-					SubjectType:  constraints.NodeType,
+					Name:          "key_id_email",
+					Pattern:       getPattern(NodeEntityType, "n", "Person"),
+					Alias:         "n",
+					PropertyNames: []string{"id", "email"},
+					SubjectType:   constraints.NodeType,
 				},
 			},
 			wantErr: assert.NoError,
@@ -98,10 +99,11 @@ func Test_keyConstraintConverter_ConvertEdge(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:         "key_from_to",
-					Pattern:      getPattern(EdgeEntityType, "n", "IS_FRIEND"),
-					PropertyName: "(n.from, n.to)",
-					SubjectType:  constraints.RelationshipType,
+					Name:          "key_from_to",
+					Pattern:       getPattern(EdgeEntityType, "n", "IS_FRIEND"),
+					Alias:         "n",
+					PropertyNames: []string{"from", "to"},
+					SubjectType:   constraints.RelationshipType,
 				},
 			},
 			wantErr: assert.NoError,
@@ -158,10 +160,11 @@ func Test_keyConstraintConverter_ConvertProperty(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:         "key_id",
-					Pattern:      getPattern(NodeEntityType, "n", "Person"),
-					PropertyName: "(n.id)",
-					SubjectType:  constraints.NodeType,
+					Name:          "key_id",
+					Pattern:       getPattern(NodeEntityType, "n", "Person"),
+					Alias:         "n",
+					PropertyNames: []string{"id"},
+					SubjectType:   constraints.NodeType,
 				},
 			},
 			wantErr: assert.NoError,
@@ -179,10 +182,11 @@ func Test_keyConstraintConverter_ConvertProperty(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:         "key_id",
-					Pattern:      getPattern(EdgeEntityType, "n", "IS_FRIEND"),
-					PropertyName: "(n.id)",
-					SubjectType:  constraints.RelationshipType,
+					Name:          "key_id",
+					Pattern:       getPattern(EdgeEntityType, "n", "IS_FRIEND"),
+					Alias:         "n",
+					PropertyNames: []string{"id"},
+					SubjectType:   constraints.RelationshipType,
 				},
 			},
 			wantErr: assert.NoError,

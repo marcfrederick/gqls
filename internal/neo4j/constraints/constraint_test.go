@@ -8,9 +8,10 @@ import (
 
 func TestPropertyUniquenessConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.PropertyUniquenessConstraint{
-		PropertyName: "sub.some_property",
-		Name:         "some_name",
-		Pattern:      "(sub:Label)",
+		Alias:         "sub",
+		PropertyNames: []string{"some_property"},
+		Name:          "some_name",
+		Pattern:       "(sub:Label)",
 	}
 
 	want := "CREATE CONSTRAINT some_name FOR (sub:Label) REQUIRE sub.some_property IS UNIQUE"
@@ -21,7 +22,8 @@ func TestPropertyUniquenessConstraint_CreateStatement(t *testing.T) {
 
 func TestPropertyExistenceConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.PropertyExistenceConstraint{
-		PropertyName: "sub.some_property",
+		Alias:        "sub",
+		PropertyName: "some_property",
 		Name:         "some_name",
 		Pattern:      "(sub:Label)",
 	}
@@ -34,7 +36,8 @@ func TestPropertyExistenceConstraint_CreateStatement(t *testing.T) {
 
 func TestPropertyTypeConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.PropertyTypeConstraint{
-		PropertyName: "sub.some_property",
+		Alias:        "sub",
+		PropertyName: "some_property",
 		PropertyType: "STRING",
 		Name:         "some_name",
 		Pattern:      "(sub:Label)",
@@ -48,10 +51,11 @@ func TestPropertyTypeConstraint_CreateStatement(t *testing.T) {
 
 func TestKeyConstraint_CreateStatement(t *testing.T) {
 	constraint := &constraints.KeyConstraint{
-		PropertyName: "sub.some_property",
-		SubjectType:  constraints.NodeType,
-		Name:         "some_name",
-		Pattern:      "(sub:Label)",
+		Alias:         "sub",
+		PropertyNames: []string{"some_property"},
+		SubjectType:   constraints.NodeType,
+		Name:          "some_name",
+		Pattern:       "(sub:Label)",
 	}
 
 	want := "CREATE CONSTRAINT some_name FOR (sub:Label) REQUIRE sub.some_property IS NODE KEY"

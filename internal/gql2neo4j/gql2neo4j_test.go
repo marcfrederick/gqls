@@ -99,19 +99,22 @@ func TestConvert(t *testing.T) {
 				&constraints.PropertyTypeConstraint{
 					Name:         "type_person_name",
 					Pattern:      "(n:Person)",
-					PropertyName: "n.name",
+					Alias:        "n",
+					PropertyName: "name",
 					PropertyType: "STRING",
 				},
 				&constraints.PropertyTypeConstraint{
 					Name:         "type_person_age",
 					Pattern:      "(n:Person)",
-					PropertyName: "n.age",
+					Alias:        "n",
+					PropertyName: "age",
 					PropertyType: "INTEGER",
 				},
 				&constraints.PropertyExistenceConstraint{
 					Name:         "existence_person_age",
 					Pattern:      "(n:Person)",
-					PropertyName: "n.age",
+					Alias:        "n",
+					PropertyName: "age",
 				},
 				triggers.NewTrigger(
 					"numeric_range_person_age",

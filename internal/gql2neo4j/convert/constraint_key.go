@@ -2,7 +2,6 @@ package convert
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/neo4j"
@@ -61,16 +60,12 @@ func newKeyConstraint(entityType EntityType, label string, fields []string) ([]n
 		return nil, fmt.Errorf("unsupported entity type %v for key constraint", entityType)
 	}
 
-	qualifiedFields := make([]string, len(fields))
-	for i, field := range fields {
-		qualifiedFields[i] = fmt.Sprintf("n.%s", field)
-	}
-
 	return []neo4j.SchemaObject{&constraints.KeyConstraint{
-		Name:         mustFormatName("key", fields...),
-		Pattern:      getPattern(entityType, "n", label),
-		PropertyName: fmt.Sprintf("(%s)", strings.Join(qualifiedFields, ", ")),
-		SubjectType:  subjectType,
+		Name:          mustFormatName("key", fields...),
+		Pattern:       getPattern(entityType, "n", label),
+		Alias:         "n",
+		PropertyNames: fields,
+		SubjectType:   subjectType,
 	}}, nil
 }
 

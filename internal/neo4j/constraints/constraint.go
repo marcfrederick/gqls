@@ -3,6 +3,7 @@ package constraints
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/marcfrederick/gqls/internal/neo4j"
 )
@@ -29,16 +30,29 @@ type Constraint interface {
 
 // PropertyUniquenessConstraint ensures uniqueness.
 type PropertyUniquenessConstraint struct {
-	Name         string
-	Pattern      string
-	PropertyName string
+	Name          string
+	Pattern       string
+	Alias         string
+	PropertyNames []string
 }
 
 var _ Constraint = (*PropertyUniquenessConstraint)(nil)
 
 // CreateStatement generates the Cypher statement to create the property uniqueness constraint.
 func (c *PropertyUniquenessConstraint) CreateStatement() string {
-	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS UNIQUE", c.Name, c.Pattern, c.PropertyName)
+	if len(c.PropertyNames) == 0 {
+		panic("property uniqueness constraint must have at least one property name")
+	}
+
+	aliasedPropertyNames := make([]string, len(c.PropertyNames))
+	for i, name := range c.PropertyNames {
+		aliasedPropertyNames[i] = fmt.Sprintf("%s.%s", c.Alias, name)
+	}
+
+	if len(aliasedPropertyNames) == 1 {
+		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS UNIQUE", c.Name, c.Pattern, aliasedPropertyNames[0])
+	}
+	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE (%s) IS UNIQUE", c.Name, c.Pattern, strings.Join(aliasedPropertyNames, ", "))
 }
 
 func (*PropertyUniquenessConstraint) sealed() {}
@@ -47,6 +61,7 @@ func (*PropertyUniquenessConstraint) sealed() {}
 type PropertyExistenceConstraint struct {
 	Name         string
 	Pattern      string
+	Alias        string
 	PropertyName string
 }
 
@@ -54,7 +69,7 @@ var _ Constraint = (*PropertyExistenceConstraint)(nil)
 
 // CreateStatement generates the Cypher statement to create the property existence constraint.
 func (c *PropertyExistenceConstraint) CreateStatement() string {
-	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS NOT NULL", c.Name, c.Pattern, c.PropertyName)
+	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s.%s IS NOT NULL", c.Name, c.Pattern, c.Alias, c.PropertyName)
 }
 
 func (*PropertyExistenceConstraint) sealed() {}
@@ -63,6 +78,7 @@ func (*PropertyExistenceConstraint) sealed() {}
 type PropertyTypeConstraint struct {
 	Name         string
 	Pattern      string
+	Alias        string
 	PropertyName string
 	PropertyType string
 }
@@ -71,30 +87,47 @@ var _ Constraint = (*PropertyTypeConstraint)(nil)
 
 // CreateStatement generates the Cypher statement to create the property type constraint.
 func (c *PropertyTypeConstraint) CreateStatement() string {
-	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS :: %s", c.Name, c.Pattern, c.PropertyName, c.PropertyType)
+	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s.%s IS :: %s", c.Name, c.Pattern, c.Alias, c.PropertyName, c.PropertyType)
 }
 
 func (*PropertyTypeConstraint) sealed() {}
 
 // KeyConstraint ensures a property is a key.
 type KeyConstraint struct {
-	Name         string
-	Pattern      string
-	PropertyName string
-	SubjectType  SubjectType
+	Name          string
+	Pattern       string
+	Alias         string
+	PropertyNames []string
+	SubjectType   SubjectType
 }
 
 var _ Constraint = (*KeyConstraint)(nil)
 
 // CreateStatement generates the Cypher statement to create the key constraint.
 func (c *KeyConstraint) CreateStatement() string {
+	if len(c.PropertyNames) == 0 {
+		panic("key constraint must have at least one property name")
+	}
+
+	aliasedPropertyNames := make([]string, len(c.PropertyNames))
+	for i, name := range c.PropertyNames {
+		aliasedPropertyNames[i] = fmt.Sprintf("%s.%s", c.Alias, name)
+	}
+
+	var constraintType string
 	switch c.SubjectType {
 	case NodeType:
-		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS NODE KEY", c.Name, c.Pattern, c.PropertyName)
+		constraintType = "NODE KEY"
 	case RelationshipType:
-		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS RELATIONSHIP KEY", c.Name, c.Pattern, c.PropertyName)
+		constraintType = "RELATIONSHIP KEY"
+	default:
+		panic(fmt.Sprintf("invalid subject type: %d", c.SubjectType))
 	}
-	panic(fmt.Sprintf("invalid subject type: %d", c.SubjectType))
+
+	if len(aliasedPropertyNames) == 1 {
+		return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE %s IS %s", c.Name, c.Pattern, aliasedPropertyNames[0], constraintType)
+	}
+	return fmt.Sprintf("CREATE CONSTRAINT %s FOR %s REQUIRE (%s) IS %s", c.Name, c.Pattern, strings.Join(aliasedPropertyNames, ", "), constraintType)
 }
 
 func (*KeyConstraint) sealed() {}

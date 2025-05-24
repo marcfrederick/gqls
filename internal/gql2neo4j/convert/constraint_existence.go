@@ -1,8 +1,6 @@
 package convert
 
 import (
-	"fmt"
-
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/neo4j"
 	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
@@ -25,7 +23,8 @@ func (t *existenceConstraintConverter) ConvertProperty(entityType EntityType, la
 		&constraints.PropertyExistenceConstraint{
 			Name:         mustFormatName("existence", label, propertyType.PropertyName),
 			Pattern:      getPattern(entityType, "n", label),
-			PropertyName: fmt.Sprintf("n.%s", propertyType.PropertyName),
+			Alias:        "n",
+			PropertyName: propertyType.PropertyName,
 		},
 	}, nil
 }

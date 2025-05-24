@@ -2,7 +2,6 @@ package convert
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/marcfrederick/gqls/internal/gql"
 	"github.com/marcfrederick/gqls/internal/neo4j"
@@ -56,16 +55,12 @@ func (t *uniqueConstraintConverter) ConvertProperty(entityType EntityType, label
 }
 
 func newUniqueConstraint(entityType EntityType, label string, fields []string) ([]neo4j.SchemaObject, error) {
-	qualifiedFields := make([]string, len(fields))
-	for i, field := range fields {
-		qualifiedFields[i] = fmt.Sprintf("n.%s", field)
-	}
-
 	return []neo4j.SchemaObject{
 		&constraints.PropertyUniquenessConstraint{
-			Name:         mustFormatName("unique", fields...),
-			Pattern:      getPattern(entityType, "n", label),
-			PropertyName: fmt.Sprintf("(%s)", strings.Join(qualifiedFields, ", ")),
+			Name:          mustFormatName("unique", fields...),
+			Pattern:       getPattern(entityType, "n", label),
+			Alias:         "n",
+			PropertyNames: fields,
 		},
 	}, nil
 }
