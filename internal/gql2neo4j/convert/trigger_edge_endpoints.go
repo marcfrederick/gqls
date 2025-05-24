@@ -17,6 +17,13 @@ func (p *edgeEndpointsTriggerConverter) IsCompatible(meta *DatabaseMetadata) (bo
 }
 
 func (p *edgeEndpointsTriggerConverter) ConvertEdge(edgeType *gql.EdgeType) ([]neo4j.SchemaObject, error) {
+	if edgeType.SourceNodeType == nil && edgeType.DestinationNodeType == nil {
+		return nil, nil
+	}
+	if edgeType.SourceNodeType == nil || edgeType.DestinationNodeType == nil {
+		return nil, fmt.Errorf("error Neo4j requires both source and destination node types for edge endpoints trigger")
+	}
+
 	if len(edgeType.EdgeTypeLabelSet) != 1 {
 		return nil, fmt.Errorf("error Neo4j only supports one label per edge type")
 	}

@@ -21,7 +21,7 @@ func (t *uniqueConstraintConverter) IsCompatible(_ *DatabaseMetadata) (bool, err
 }
 
 func (t *uniqueConstraintConverter) ConvertNode(nodeType *gql.NodeType) ([]neo4j.SchemaObject, error) {
-	if nodeType.ExtendedAttributes == nil || len(nodeType.ExtendedAttributes.CompositePrimaryKeyFields) == 0 {
+	if nodeType.ExtendedAttributes == nil || len(nodeType.ExtendedAttributes.CompositeUniqueConstraintFields) == 0 {
 		return nil, nil
 	}
 
@@ -30,7 +30,7 @@ func (t *uniqueConstraintConverter) ConvertNode(nodeType *gql.NodeType) ([]neo4j
 		return nil, fmt.Errorf("error getting label for node type %s: %w", nodeType.NodeTypeLabelSet, err)
 	}
 
-	return newUniqueConstraint(NodeEntityType, label, nodeType.ExtendedAttributes.CompositePrimaryKeyFields)
+	return newUniqueConstraint(NodeEntityType, label, nodeType.ExtendedAttributes.CompositeUniqueConstraintFields)
 }
 
 func (t *uniqueConstraintConverter) ConvertEdge(edgeType *gql.EdgeType) ([]neo4j.SchemaObject, error) {

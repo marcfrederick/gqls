@@ -523,19 +523,23 @@ func parseEdgeType(
 	if nodeTypeAlias := sourceCtx.SourceNodeTypeAlias(); nodeTypeAlias != nil {
 		source = &NodeType{Alias: nodeTypeAlias.GetText()}
 	} else {
-		source, err = parseNodeTypeFiller(sourceCtx.NodeTypeFiller())
-		if err != nil {
-			return nil, fmt.Errorf("error parsing source node type: %w", err)
+		if nodeTypeFiller := sourceCtx.NodeTypeFiller(); nodeTypeFiller != nil {
+			source, err = parseNodeTypeFiller(nodeTypeFiller)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing source node type: %w", err)
+			}
 		}
 	}
 
 	var destination *NodeType
 	if nodeTypeAlias := destCtx.DestinationNodeTypeAlias(); nodeTypeAlias != nil {
-		source = &NodeType{Alias: nodeTypeAlias.GetText()}
+		destination = &NodeType{Alias: nodeTypeAlias.GetText()}
 	} else {
-		destination, err = parseNodeTypeFiller(destCtx.NodeTypeFiller())
-		if err != nil {
-			return nil, fmt.Errorf("error parsing destination node type: %w", err)
+		if nodeTypeFiller := destCtx.NodeTypeFiller(); nodeTypeFiller != nil {
+			destination, err = parseNodeTypeFiller(nodeTypeFiller)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing destination node type: %w", err)
+			}
 		}
 	}
 
