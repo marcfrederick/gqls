@@ -33,8 +33,8 @@ func parseElementTypeSpecification(elementTypeSpec parser.IElementTypeSpecificat
 			return fmt.Errorf("error parsing node type nodeType: %w", err)
 		}
 		nodeType.ExtendedAttributes = &ExtendedElementAttributes{
-			CompositePrimaryKeyFields:      compositePrimaryKeyFields,
-			CompositeCheckConstraintFields: compositeUniqueConstraintFields,
+			CompositePrimaryKeyFields:       compositePrimaryKeyFields,
+			CompositeUniqueConstraintFields: compositeUniqueConstraintFields,
 		}
 		graphType.NodeTypeSet = append(graphType.NodeTypeSet, nodeType)
 	}
@@ -45,8 +45,8 @@ func parseElementTypeSpecification(elementTypeSpec parser.IElementTypeSpecificat
 			return fmt.Errorf("error parsing edge type edgeType: %w", err)
 		}
 		edgeType.ExtendedAttributes = &ExtendedElementAttributes{
-			CompositePrimaryKeyFields:      compositePrimaryKeyFields,
-			CompositeCheckConstraintFields: compositeUniqueConstraintFields,
+			CompositePrimaryKeyFields:       compositePrimaryKeyFields,
+			CompositeUniqueConstraintFields: compositeUniqueConstraintFields,
 		}
 		graphType.EdgeTypeSet = append(graphType.EdgeTypeSet, edgeType)
 	}

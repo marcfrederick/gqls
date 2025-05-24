@@ -4,8 +4,8 @@ import "github.com/marcfrederick/gqls/internal/gql/datatype"
 
 // ExtendedElementAttributes represents extended element attributes.
 type ExtendedElementAttributes struct {
-	CompositePrimaryKeyFields      []string
-	CompositeCheckConstraintFields []string
+	CompositePrimaryKeyFields       []string
+	CompositeUniqueConstraintFields []string
 }
 
 // ExtendedPropertyAttributes represents extended property attributes.
