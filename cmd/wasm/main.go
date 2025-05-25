@@ -1,72 +1,62 @@
-//go:build wasm
+//go:build wasm && js
+// +build wasm,js
+
 package main
 
 import (
 	"encoding/json"
+	"errors"
 	"syscall/js"
 
 	"github.com/marcfrederick/gqls/internal/gql2neo4j"
 	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
 )
 
-var (
-	version = "dev"
-	commit  = "none"
-)
+// version is set to the current version at build time.
+var version = "dev"
 
-// ConversionRequest represents the request for the conversion function.
-type ConversionRequest struct {
+type conversionRequest struct {
 	GQL          string `json:"gql"`
 	Neo4jVersion string `json:"neo4jVersion"`
 	ApocEnabled  bool   `json:"apocEnabled"`
 }
 
-// ConversionResponse represents the response from the conversion function.
-type ConversionResponse struct {
-	Neo4j string `json:"neo4j"`
-	Error string `json:"error,omitempty"`
-}
-
 func main() {
 	js.Global().Set("convertGQL", js.FuncOf(convertGQL))
 	js.Global().Set("getVersionInfo", js.FuncOf(getVersionInfo))
+
 	select {}
 }
 
-func convertGQL(this js.Value, args []js.Value) interface{} {
+func convertGQL(_ js.Value, args []js.Value) any {
 	if len(args) != 1 {
-		return map[string]interface{}{
-			"error": "Invalid number of arguments, expected 1",
-		}
+		return jsError(errors.New("expected a single JSON‑encoded argument"))
 	}
 
-	// Parse the JSON input
-	jsonStr := args[0].String()
-	var req ConversionRequest
-	if err := json.Unmarshal([]byte(jsonStr), &req); err != nil {
-		return map[string]interface{}{
-			"error": "Failed to parse request: " + err.Error(),
-		}
+	if args[0].Type() != js.TypeString {
+		return jsError(errors.New("argument must be a JSON string"))
 	}
 
-	// Perform the conversion
-	neo4j, err := gql2neo4j.ConvertString(req.GQL, convert.DatabaseMetadata{
+	var req conversionRequest
+	if err := json.Unmarshal([]byte(args[0].String()), &req); err != nil {
+		return jsError(err)
+	}
+
+	cypher, err := gql2neo4j.ConvertString(req.GQL, convert.DatabaseMetadata{
 		Version:     req.Neo4jVersion,
 		APOCEnabled: req.ApocEnabled,
 	})
-
-	resp := ConversionResponse{
-		Neo4j: neo4j,
-	}
 	if err != nil {
-		resp.Error = err.Error()
+		return jsError(err)
 	}
 
-	// Convert response back to JavaScript object
-	respJSON, _ := json.Marshal(resp)
-	return js.Global().Get("JSON").Call("parse", string(respJSON))
+	return map[string]any{"neo4j": cypher}
 }
 
-func getVersionInfo(this js.Value, args []js.Value) interface{} {
+func getVersionInfo(_ js.Value, _ []js.Value) any {
 	return version
+}
+
+func jsError(err error) map[string]any {
+	return map[string]any{"error": err.Error()}
 }
