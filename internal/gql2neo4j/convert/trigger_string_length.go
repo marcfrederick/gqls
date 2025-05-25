@@ -58,6 +58,6 @@ func newStringLengthTrigger(entityType EntityType, label, propertyName string, m
 		return nil, fmt.Errorf("error rendering template: %w", err)
 	}
 
-	triggerName := mustFormatName("string_length", label, propertyName)
+	triggerName := mustFormatName("string_length", []string{label, propertyName})
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }

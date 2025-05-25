@@ -92,7 +92,7 @@ func Test_mustFormatName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := mustFormatName(tt.args.prefix, tt.args.components...); got != tt.want {
+			if got := mustFormatName(tt.args.prefix, tt.args.components); got != tt.want {
 				t.Errorf("mustFormatName() = %v, want %v", got, tt.want)
 			}
 		})

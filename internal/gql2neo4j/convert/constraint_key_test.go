@@ -45,7 +45,7 @@ func Test_keyConstraintConverter_ConvertNode(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:          "key_id_email",
+					Name:          "key_person_id_email",
 					Pattern:       getPattern(NodeEntityType, "n", "Person"),
 					Alias:         "n",
 					PropertyNames: []string{"id", "email"},
@@ -99,7 +99,7 @@ func Test_keyConstraintConverter_ConvertEdge(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:          "key_from_to",
+					Name:          "key_is_friend_from_to",
 					Pattern:       getPattern(EdgeEntityType, "n", "IS_FRIEND"),
 					Alias:         "n",
 					PropertyNames: []string{"from", "to"},
@@ -160,7 +160,7 @@ func Test_keyConstraintConverter_ConvertProperty(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:          "key_id",
+					Name:          "key_person_id",
 					Pattern:       getPattern(NodeEntityType, "n", "Person"),
 					Alias:         "n",
 					PropertyNames: []string{"id"},
@@ -182,7 +182,7 @@ func Test_keyConstraintConverter_ConvertProperty(t1 *testing.T) {
 			},
 			want: []neo4j.SchemaObject{
 				&constraints.KeyConstraint{
-					Name:          "key_id",
+					Name:          "key_is_friend_id",
 					Pattern:       getPattern(EdgeEntityType, "n", "IS_FRIEND"),
 					Alias:         "n",
 					PropertyNames: []string{"id"},

@@ -53,7 +53,7 @@ func (t *typeConstraintConverter) ConvertProperty(entityType EntityType, label s
 
 	return []neo4j.SchemaObject{
 		&constraints.PropertyTypeConstraint{
-			Name:         mustFormatName("type", label, propertyType.PropertyName),
+			Name:         mustFormatName("type", []string{label, propertyType.PropertyName}),
 			Pattern:      getPattern(entityType, "n", label),
 			Alias:        "n",
 			PropertyName: propertyType.PropertyName,

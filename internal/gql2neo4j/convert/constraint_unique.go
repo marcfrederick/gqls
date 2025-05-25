@@ -57,7 +57,7 @@ func (t *uniqueConstraintConverter) ConvertProperty(entityType EntityType, label
 func newUniqueConstraint(entityType EntityType, label string, fields []string) ([]neo4j.SchemaObject, error) {
 	return []neo4j.SchemaObject{
 		&constraints.PropertyUniquenessConstraint{
-			Name:          mustFormatName("unique", fields...),
+			Name:          mustFormatName("unique", append([]string{label}, fields...)),
 			Pattern:       getPattern(entityType, "n", label),
 			Alias:         "n",
 			PropertyNames: fields,

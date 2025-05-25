@@ -66,6 +66,6 @@ func newNumericRangeTrigger(entityType EntityType, label, propertyName string, p
 		return nil, fmt.Errorf("error rendering template: %w", err)
 	}
 
-	triggerName := mustFormatName("numeric_range", label, propertyName)
+	triggerName := mustFormatName("numeric_range", []string{label, propertyName})
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }

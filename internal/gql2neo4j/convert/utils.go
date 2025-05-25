@@ -51,7 +51,7 @@ func isVersionSupported(current, minimum string) (bool, error) {
 }
 
 // mustFormatName formats the name of a constraint or trigger.
-func mustFormatName(prefix string, components ...string) string {
+func mustFormatName(prefix string, components []string) string {
 	if len(components) == 0 {
 		panic("mustFormatName requires at least one component")
 	}

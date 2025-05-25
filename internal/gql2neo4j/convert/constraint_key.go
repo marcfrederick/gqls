@@ -61,7 +61,7 @@ func newKeyConstraint(entityType EntityType, label string, fields []string) ([]n
 	}
 
 	return []neo4j.SchemaObject{&constraints.KeyConstraint{
-		Name:          mustFormatName("key", fields...),
+		Name:          mustFormatName("key", append([]string{label}, fields...)),
 		Pattern:       getPattern(entityType, "n", label),
 		Alias:         "n",
 		PropertyNames: fields,

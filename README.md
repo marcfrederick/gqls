@@ -5,7 +5,7 @@
 [![Test](https://github.com/marcfrederick/gqls/actions/workflows/test.yml/badge.svg)](https://github.com/marcfrederick/gqls/actions/workflows/test.yml)
 
 <div align="center">
-    <img src="internal/web/static/assets/logo.png" alt="GQLS Logo" width="256px"/>
+    <img src="web/assets/logo.png" alt="GQLS Logo" width="256px"/>
 </div>
 
 GQLS is a CLI tool that converts GQL schema definitions (ISO/IEC 39075:2024) into Neo4j-compatible Cypher statements. It
@@ -86,8 +86,21 @@ Run the `gqls` command with the required options:
 
 ### Web Interface
 
-GQLS includes a web interface for interactive schema conversion.
-To start the web server:
+GQLS includes a web interface for interactive schema conversion. There are two ways to use it:
+
+#### Static Website (Recommended)
+
+A static version of the web interface is available at: **https://marcfrederick.github.io/gqls**
+
+This version:
+- Runs entirely in your browser using WebAssembly
+- Requires no server-side processing
+- Works offline once loaded
+- Provides the same functionality as the CLI tool
+
+#### Local Server
+
+You can also run a local web server:
 
 ```bash
 ./gqls --serve :8080

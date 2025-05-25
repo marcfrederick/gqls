@@ -21,7 +21,7 @@ func (t *existenceConstraintConverter) ConvertProperty(entityType EntityType, la
 
 	return []neo4j.SchemaObject{
 		&constraints.PropertyExistenceConstraint{
-			Name:         mustFormatName("existence", label, propertyType.PropertyName),
+			Name:         mustFormatName("existence", []string{label, propertyType.PropertyName}),
 			Pattern:      getPattern(entityType, "n", label),
 			Alias:        "n",
 			PropertyName: propertyType.PropertyName,

@@ -64,6 +64,6 @@ func newEdgeEndpointTrigger(relationshipType, startNodeType, endNodeType string)
 		return nil, fmt.Errorf("error rendering template: %w", err)
 	}
 
-	triggerName := mustFormatName("edge_endpoint", relationshipType, startNodeType, endNodeType)
+	triggerName := mustFormatName("edge_endpoint", []string{relationshipType, startNodeType, endNodeType})
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
 }

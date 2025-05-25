@@ -10,6 +10,8 @@ GO             ?= go
 PKGS           := $(shell $(GO) list ./... | grep -v /vendor/)
 BINARY         ?= gqls
 ENTRYPOINT     ?= ./cmd/cli/main.go
+WASM_BINARY    := ./web/main.wasm
+WASM_ENTRYPOINT := ./cmd/wasm/main.go
 
 # Tools
 TOOLS_DIR      := tools
@@ -55,6 +57,16 @@ build:                      ## Build the binary
 build: generate
 	CGO_ENABLED=0 $(GO) build -o $(BINARY) -ldflags "-s -w -X 'main.version=$(VERSION)' -X 'main.commit=$(COMMIT)'" $(ENTRYPOINT)
 
+.PHONY: build-static-site
+build-static-site: generate ## Build the static site
+	cp examples/schema.gql web/example-schema.gql
+	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" web/wasm_exec.js
+	GOOS=js GOARCH=wasm $(GO) build -ldflags "-s -w -X 'main.version=$(VERSION)' -X 'main.commit=$(COMMIT)'" -o $(WASM_BINARY) $(WASM_ENTRYPOINT)
+
+.PHONY: serve
+serve: build-static-site    ## Serve the web UI
+	cd web; python3 -m http.server 8000
+
 .PHONY: test
 test:                       ## Run unit tests
 test: generate
@@ -67,4 +79,4 @@ test-integration: generate
 
 .PHONY: clean
 clean:                      ## Clean up build artifacts
-	rm -rf $(BINARY) coverage.out $(ANTLR_JAR)
+	rm -rf $(BINARY) coverage.out $(ANTLR_JAR) internal/web/wasm/ docs/main.wasm docs/wasm_exec.js web/example-schema.gql
