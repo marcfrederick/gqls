@@ -89,7 +89,7 @@ func Convert(graphType *gql.GraphType, meta convert.DatabaseMetadata) ([]neo4j.S
 }
 
 // processProperties processes properties for a given label and version.
-func processProperties(entityType convert.EntityType, label string, properties []*gql.PropertyType, meta *convert.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
+func processProperties(entityType convert.EntityType, entityLabel string, properties []*gql.PropertyType, meta *convert.DatabaseMetadata) ([]neo4j.SchemaObject, error) {
 	var schemaObjects []neo4j.SchemaObject
 
 	for _, property := range properties {
@@ -102,7 +102,7 @@ func processProperties(entityType convert.EntityType, label string, properties [
 				continue
 			}
 
-			convertedObjects, err := propertyConverter.ConvertProperty(entityType, label, property)
+			convertedObjects, err := propertyConverter.ConvertProperty(entityType, entityLabel, property)
 			if err != nil {
 				return nil, fmt.Errorf("error converting property: %w", err)
 			}

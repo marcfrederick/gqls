@@ -25,7 +25,7 @@ func (t *typeConstraintConverter) IsCompatible(meta *DatabaseMetadata) (bool, er
 	return editionSupported && versionSupported, nil
 }
 
-func (t *typeConstraintConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *typeConstraintConverter) ConvertProperty(entityType EntityType, entityLabel string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	var neo4jType neo4j.PropertyType
 	switch valueType := propertyType.PropertyValueType.(type) {
 	case *datatype.CharacterStringDataTypeDescriptor:
@@ -53,8 +53,8 @@ func (t *typeConstraintConverter) ConvertProperty(entityType EntityType, label s
 
 	return []neo4j.SchemaObject{
 		&constraints.PropertyTypeConstraint{
-			Name:         mustFormatName("type", []string{label, propertyType.PropertyName}),
-			Pattern:      getPattern(entityType, "n", label),
+			Name:         mustFormatName("type", []string{entityLabel, propertyType.PropertyName}),
+			Pattern:      getPattern(entityType, "n", entityLabel),
 			Alias:        "n",
 			PropertyName: propertyType.PropertyName,
 			PropertyType: string(neo4jType),

@@ -60,5 +60,5 @@ type PropertyConverter interface {
 	Converter
 
 	// ConvertProperty convers a property type into a list of Neo4j schema objects.
-	ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error)
+	ConvertProperty(entityType EntityType, entityLabel string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error)
 }

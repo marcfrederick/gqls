@@ -56,18 +56,13 @@ func mustFormatName(prefix string, components []string) string {
 		panic("mustFormatName requires at least one component")
 	}
 
-	var b strings.Builder
-	b.WriteString(prefix)
-	b.WriteString("_")
-
-	for i, component := range components {
-		if i > 0 {
-			b.WriteString("_")
-		}
-		b.WriteString(component)
-	}
-
-	return strings.ToLower(b.String())
+	return strings.ToLower(
+		fmt.Sprintf(
+			"%s_%s",
+			prefix,
+			strings.Join(components, "_"),
+		),
+	)
 }
 
 // getPattern generates a Cypher pattern based on the entity type, variable, and label.

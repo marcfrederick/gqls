@@ -46,12 +46,12 @@ func (t *keyConstraintConverter) ConvertEdge(edgeType *gql.EdgeType) ([]neo4j.Sc
 	return newKeyConstraint(EdgeEntityType, label, edgeType.ExtendedAttributes.CompositePrimaryKeyFields)
 }
 
-func (t *keyConstraintConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *keyConstraintConverter) ConvertProperty(entityType EntityType, entityLabel string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	if propertyType.ExtendedAttributes == nil || !propertyType.ExtendedAttributes.IsPrimaryKey {
 		return nil, nil
 	}
 
-	return newKeyConstraint(entityType, label, []string{propertyType.PropertyName})
+	return newKeyConstraint(entityType, entityLabel, []string{propertyType.PropertyName})
 }
 
 func newKeyConstraint(entityType EntityType, label string, fields []string) ([]neo4j.SchemaObject, error) {

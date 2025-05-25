@@ -17,7 +17,7 @@ func (p *stringLengthTriggerConverter) IsCompatible(meta *DatabaseMetadata) (boo
 	return meta.APOCEnabled, nil
 }
 
-func (p *stringLengthTriggerConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (p *stringLengthTriggerConverter) ConvertProperty(entityType EntityType, entityLabel string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	typeDesc, ok := propertyType.PropertyValueType.(*datatype.CharacterStringDataTypeDescriptor)
 	if !ok {
 		return nil, nil
@@ -26,7 +26,7 @@ func (p *stringLengthTriggerConverter) ConvertProperty(entityType EntityType, la
 		return nil, nil
 	}
 
-	trigger, err := newStringLengthTrigger(entityType, label, propertyType.PropertyName, typeDesc.MinLength, typeDesc.MaxLength)
+	trigger, err := newStringLengthTrigger(entityType, entityLabel, propertyType.PropertyName, typeDesc.MinLength, typeDesc.MaxLength)
 	if err != nil {
 		return nil, fmt.Errorf("error creating string length trigger: %w", err)
 	}

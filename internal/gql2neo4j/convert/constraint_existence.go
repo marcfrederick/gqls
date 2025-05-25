@@ -14,15 +14,15 @@ func (t *existenceConstraintConverter) IsCompatible(meta *DatabaseMetadata) (boo
 	return meta.Edition == Neo4jEnterpriseEdition, nil
 }
 
-func (t *existenceConstraintConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (t *existenceConstraintConverter) ConvertProperty(entityType EntityType, entityLabel string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	if propertyType.PropertyValueType.IsNullable() {
 		return nil, nil
 	}
 
 	return []neo4j.SchemaObject{
 		&constraints.PropertyExistenceConstraint{
-			Name:         mustFormatName("existence", []string{label, propertyType.PropertyName}),
-			Pattern:      getPattern(entityType, "n", label),
+			Name:         mustFormatName("existence", []string{entityLabel, propertyType.PropertyName}),
+			Pattern:      getPattern(entityType, "n", entityLabel),
 			Alias:        "n",
 			PropertyName: propertyType.PropertyName,
 		},

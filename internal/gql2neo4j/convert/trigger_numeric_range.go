@@ -18,7 +18,7 @@ func (p *numericRangeTriggerConverter) IsCompatible(meta *DatabaseMetadata) (boo
 	return meta.APOCEnabled, nil
 }
 
-func (p *numericRangeTriggerConverter) ConvertProperty(entityType EntityType, label string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
+func (p *numericRangeTriggerConverter) ConvertProperty(entityType EntityType, entityLabel string, propertyType *gql.PropertyType) ([]neo4j.SchemaObject, error) {
 	typeDesc, ok := propertyType.PropertyValueType.(*datatype.NumericDataTypeDescriptor)
 	if !ok {
 		return nil, nil
@@ -32,7 +32,7 @@ func (p *numericRangeTriggerConverter) ConvertProperty(entityType EntityType, la
 
 	var schemaObjects []neo4j.SchemaObject
 	if typeDesc.Precision != 0 && typeDesc.Precision != 63 {
-		trigger, err := newNumericRangeTrigger(entityType, label, propertyType.PropertyName, typeDesc.Precision)
+		trigger, err := newNumericRangeTrigger(entityType, entityLabel, propertyType.PropertyName, typeDesc.Precision)
 		if err != nil {
 			return nil, fmt.Errorf("error creating numeric range trigger: %w", err)
 		}
