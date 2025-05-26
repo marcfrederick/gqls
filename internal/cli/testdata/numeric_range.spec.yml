@@ -1,0 +1,41 @@
+schema: |-
+  CREATE PROPERTY GRAPH someGraphType {
+    (:Post { foo :: FLOAT16, bar :: INT8 }),
+    (:Post)-[:RELATES_TO { baz :: FLOAT, qux :: INT(4) }]->(:Post)
+  }
+
+cases:
+  - name: FLOAT16 at lower bound
+    query: "CREATE (:Post { foo: -32768.0 })"
+  - name: FLOAT16 below lower bound
+    query: "CREATE (:Post { foo: -32769.0 })"
+    want_err: true
+  - name: FLOAT16 at upper bound
+    query: "CREATE (:Post { foo: 32767.0 })"
+  - name: FLOAT16 above upper bound
+    query: "CREATE (:Post { foo: 32768.0 })"
+    want_err: true
+  - name: FLOAT16 is NULL
+    query: "CREATE (:Post { foo: NULL })"
+  - name: INT8 at upper bound
+    query: "CREATE (:Post { bar: 127 })"
+  - name: INT8 above upper bound
+    query: "CREATE (:Post { bar: 128 })"
+    want_err: true
+  - name: INT8 at lower bound
+    query: "CREATE (:Post { bar: -128 })"
+  - name: INT8 below lower bound
+    query: "CREATE (:Post { bar: -129 })"
+    want_err: true
+  - name: valid FLOAT & FLOAT(4)
+    query: "CREATE (:Post)-[:RELATES_TO { baz: 1.0, qux: 2 }]->(:Post)"
+  - name: FLOAT(4) at upper bound
+    query: "CREATE (:Post)-[:RELATES_TO { qux: 15 }]->(:Post)"
+  - name: FLOAT(4) above upper bound
+    query: "CREATE (:Post)-[:RELATES_TO { qux: 16 }]->(:Post)"
+    want_err: true
+  - name: FLOAT(4) at lower bound
+    query: "CREATE (:Post)-[:RELATES_TO { qux: -16 }]->(:Post)"
+  - name: FLOAT(4) below lower bound
+    query: "CREATE (:Post)-[:RELATES_TO { qux: -17 }]->(:Post)"
+    want_err: true

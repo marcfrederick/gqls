@@ -1,0 +1,26 @@
+schema: |-
+  CREATE PROPERTY GRAPH someGraphType {
+    (:Post { title :: VARCHAR(16), content :: STRING }),
+    (:Post)-[:RELATED_TO { tags :: STRING(10, 20) }]->(:Post)
+  }
+
+cases:
+  - name: VARCHAR(16) at maximum length
+    query: "CREATE (:Post { title: 'abcdefghijklmnop' })"
+  - name: VARCHAR(16) above maximum length
+    query: "CREATE (:Post { title: 'abcdefghijklmnopq' })"
+    want_err: true
+  - name: VARCHAR(16) is NULL
+    query: "CREATE (:Post { title: NULL })"
+  - name: STRING(10, 20) at minimum length
+    query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghij' }]->(:Post)"
+  - name: STRING(10, 20) below minimum length
+    query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghi' }]->(:Post)"
+    want_err: true
+  - name: STRING(10, 20) at maximum length
+    query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghijklmnopqrst' }]->(:Post)"
+  - name: STRING(10, 20) above maximum length
+    query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghijklmnopqrstu' }]->(:Post)"
+    want_err: true
+  - name: STRING(10, 20) is NULL
+    query: "CREATE (:Post)-[:RELATED_TO { tags: NULL }]->(:Post)"
