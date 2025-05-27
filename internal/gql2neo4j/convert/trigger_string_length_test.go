@@ -11,7 +11,7 @@ func Test_newStringLengthTrigger(t *testing.T) {
 	}
 
 	got := trigger.CreateStatement()
-	want := `CALL apoc.trigger.add("string_length_person_name", "UNWIND $createdRelationships AS e WITH e WHERE e:Person AND e.name IS NOT NULL AND (size(e.name) < 1 OR size(e.name) > 255) CALL apoc.util.validate(true, 'name must be between 1 and 255 characters', []) RETURN null UNION UNWIND keys($assignedRelationshipProperties) AS prop UNWIND $assignedRelationshipProperties[prop] AS change WITH change WHERE change:Person AND change.name IS NOT NULL AND (size(change.name) < 1 OR size(change.name) > 255) CALL apoc.util.validate(true, 'name must be between 1 and 255 characters', []) RETURN null", {phase: "before"})`
+	want := `CALL apoc.trigger.add("string_length_person_name", "UNWIND $createdRelationships AS e WITH e WHERE e:Person AND e.name IS NOT NULL AND (size(e.name) < 1 OR size(e.name) > 255) CALL apoc.util.validate(true, 'name must be between 1 and 255 characters', []) RETURN NULL UNION UNWIND keys($assignedRelationshipProperties) AS prop UNWIND $assignedRelationshipProperties[prop] AS change WITH change WHERE change.relationship:Person AND change.key = \"name\" AND change.new IS NOT NULL AND (size(change.new) < 1 OR size(change.new) > 255) CALL apoc.util.validate(true, 'name must be between 1 and 255 characters', []) RETURN NULL", {phase: "before"})`
 	if got != want {
 		t.Errorf("newStringLengthTrigger() got = %s, want = %s", got, want)
 	}

@@ -53,14 +53,19 @@ type NumericRangeTriggerData struct {
 
 // newNumericRangeTrigger creates a new numeric range trigger.
 func newNumericRangeTrigger(entityType EntityType, label, propertyName string, precision int) (*triggers.Trigger, error) {
+	minValue, maxValue, err := computeBoundaries(precision)
+	if err != nil {
+		return nil, fmt.Errorf("error computing boundaries: %w", err)
+	}
+
 	createdVariable, assignedPropertiesVariable := entityTypeToVariables(entityType)
 	kernelTransaction, err := renderTemplate("numeric_range_trigger.cypher.tmpl", NumericRangeTriggerData{
 		CreatedVariable:            createdVariable,
 		AssignedPropertiesVariable: assignedPropertiesVariable,
 		Label:                      label,
 		PropertyName:               propertyName,
-		MinValue:                   -int(math.Pow(2, float64(precision))),
-		MaxValue:                   int(math.Pow(2, float64(precision))) - 1,
+		MinValue:                   minValue,
+		MaxValue:                   maxValue,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error rendering template: %w", err)
@@ -68,4 +73,14 @@ func newNumericRangeTrigger(entityType EntityType, label, propertyName string, p
 
 	triggerName := mustFormatName("numeric_range", []string{label, propertyName})
 	return triggers.NewTrigger(triggerName, kernelTransaction, triggers.Selector{Phase: triggers.Before}), nil
+}
+
+// computeBoundaries computes the minimum and maximum values for a numeric range based on the precision.
+func computeBoundaries(precision int) (int, int, error) {
+	if precision < 1 || precision > 63 {
+		return 0, 0, fmt.Errorf("precision must be between 1 and 63")
+	}
+	minValue := -int(math.Pow(2, float64(precision)))
+	maxValue := int(math.Pow(2, float64(precision))) - 1
+	return minValue, maxValue, nil
 }

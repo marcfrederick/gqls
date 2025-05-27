@@ -118,7 +118,7 @@ func TestConvert(t *testing.T) {
 				},
 				triggers.NewTrigger(
 					"numeric_range_person_age",
-					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null UNION UNWIND keys($assignedNodeProperties) AS prop UNWIND $assignedNodeProperties[prop] AS change WITH change WHERE change:Person AND change.age IS NOT NULL AND (change.age < -128 OR change.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN null",
+					"UNWIND $createdNodes AS e WITH e WHERE e:Person AND e.age IS NOT NULL AND (e.age < -128 OR e.age > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN NULL UNION UNWIND keys($assignedNodeProperties) AS prop UNWIND $assignedNodeProperties[prop] AS change WITH change WHERE change.node:Person AND change.key = \"age\" AND change.new IS NOT NULL AND (change.new < -128 OR change.new > 127) CALL apoc.util.validate(true, 'age must be between -128 and 127', []) RETURN NULL",
 					triggers.Selector{Phase: triggers.Before},
 				),
 			},

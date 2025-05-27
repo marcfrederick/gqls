@@ -11,15 +11,17 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
+	"github.com/goccy/go-yaml"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"gopkg.in/yaml.v3"
 
 	"github.com/marcfrederick/gqls/internal/cli"
 )
+
+// neo4jVersion is the version of Neo4j to use in the integration tests.
+const neo4jVersion = "2025.04-enterprise"
 
 var containerMutex sync.Mutex
 
@@ -34,7 +36,7 @@ type testSpec struct {
 	Cases  []testCase `yaml:"cases"`
 }
 
-func TestRun(t *testing.T) {
+func TestGQLSchemaConversion(t *testing.T) {
 	testSpecPaths, err := filepath.Glob("testdata/*.spec.yml")
 	if err != nil {
 		t.Fatalf("failed to find test cases: %v", err)
@@ -112,6 +114,7 @@ func splitStatements(s string) []string {
 	return statements
 }
 
+// convertGQLToNeo4j uses the gqls CLI to convert a GQL schema to Neo4j Cypher statements.
 func convertGQLToNeo4j(t *testing.T, schema string) string {
 	t.Helper()
 
@@ -134,7 +137,6 @@ func convertGQLToNeo4j(t *testing.T, schema string) string {
 	if err != nil {
 		t.Fatalf("failed to read converted file %q: %v", outputPath, err)
 	}
-
 	return string(converted)
 }
 
@@ -148,10 +150,10 @@ func neo4jIntegrationTest(t *testing.T, testFunc func(session neo4j.SessionWithC
 	defer containerMutex.Unlock()
 
 	container, err := startNeo4jContainer(t.Context())
-	testcontainers.CleanupContainer(t, container)
 	if err != nil {
 		t.Fatalf("failed to start Neo4j container: %v", err)
 	}
+	testcontainers.CleanupContainer(t, container)
 
 	host, err := container.Host(t.Context())
 	if err != nil {
@@ -167,32 +169,34 @@ func neo4jIntegrationTest(t *testing.T, testFunc func(session neo4j.SessionWithC
 	if err != nil {
 		t.Fatalf("failed to create Neo4j driver: %v", err)
 	}
-	defer driver.Close(t.Context())
+	defer func() {
+		if closeErr := driver.Close(t.Context()); closeErr != nil {
+			t.Errorf("failed to close Neo4j driver: %v", closeErr)
+		}
+	}()
 
 	if err := driver.VerifyConnectivity(t.Context()); err != nil {
 		t.Fatalf("failed to verify connectivity: %v", err)
 	}
 
 	session := driver.NewSession(t.Context(), neo4j.SessionConfig{})
-	defer session.Close(t.Context())
+	defer func() {
+		if closeErr := session.Close(t.Context()); closeErr != nil {
+			t.Errorf("failed to close Neo4j session: %v", closeErr)
+		}
+	}()
 
 	testFunc(session)
 }
 
+// startNeo4jContainer starts a Neo4j container with the specified configuration.
 func startNeo4jContainer(ctx context.Context) (testcontainers.Container, error) {
-	var providerType testcontainers.ProviderType
-	if os.Getenv("TESTCONTAINERS_DRIVER") == "podman" {
-		providerType = testcontainers.ProviderPodman
-	} else {
-		providerType = testcontainers.ProviderDocker
-	}
-
 	req := testcontainers.GenericContainerRequest{
-		ProviderType: providerType,
+		ProviderType: getProviderType(),
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "neo4j:2025.02-enterprise",
-			ExposedPorts: []string{"7474/tcp", "7687/tcp"},
-			WaitingFor:   wait.ForHTTP("/").WithPort("7474/tcp").WithStartupTimeout(5 * time.Minute),
+			Image:        "docker.io/neo4j:" + neo4jVersion,
+			ExposedPorts: []string{"7687/tcp"},
+			WaitingFor:   wait.ForLog("Bolt enabled on"),
 			Env: map[string]string{
 				"NEO4J_AUTH":                       "none",
 				"NEO4J_ACCEPT_LICENSE_AGREEMENT":   "yes",
@@ -208,5 +212,14 @@ func startNeo4jContainer(ctx context.Context) (testcontainers.Container, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to start container: %w", err)
 	}
+
 	return container, nil
+}
+
+// getProviderType returns the provider type based on the TESTCONTAINERS_DRIVER environment variable.
+func getProviderType() testcontainers.ProviderType {
+	if os.Getenv("TESTCONTAINERS_DRIVER") == "podman" {
+		return testcontainers.ProviderPodman
+	}
+	return testcontainers.ProviderDocker
 }

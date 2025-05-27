@@ -5,15 +5,16 @@ WHERE e:{{.Label}}
   AND e.{{.PropertyName}} IS NOT NULL
   AND (e.{{.PropertyName}} < {{.MinValue}} OR e.{{.PropertyName}} > {{.MaxValue}})
 CALL apoc.util.validate(true, '{{.PropertyName}} must be between {{.MinValue}} and {{.MaxValue}}', [])
-RETURN null
+RETURN NULL
 
 UNION
 
 UNWIND keys({{.AssignedPropertiesVariable}}) AS prop
 UNWIND {{.AssignedPropertiesVariable}}[prop] AS change
 WITH change
-WHERE change:{{.Label}}
-AND change.{{.PropertyName}} IS NOT NULL
-AND (change.{{.PropertyName}} < {{.MinValue}} OR change.{{.PropertyName}} > {{.MaxValue}})
+WHERE {{if eq .AssignedPropertiesVariable "$assignedNodeProperties"}}change.node{{else}}change.relationship{{end}}:{{.Label}}
+  AND change.key = "{{.PropertyName}}"
+  AND change.new IS NOT NULL
+  AND (change.new < {{.MinValue}} OR change.new > {{.MaxValue}})
 CALL apoc.util.validate(true, '{{.PropertyName}} must be between {{.MinValue}} and {{.MaxValue}}', [])
-RETURN null
+RETURN NULL

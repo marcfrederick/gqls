@@ -5,22 +5,34 @@ schema: |-
   }
 
 cases:
-  - name: VARCHAR(16) at maximum length
+  # Node properties
+  - name: Create VARCHAR(16) at maximum length
     query: "CREATE (:Post { title: 'abcdefghijklmnop' })"
-  - name: VARCHAR(16) above maximum length
+  - name: Create VARCHAR(16) above maximum length
     query: "CREATE (:Post { title: 'abcdefghijklmnopq' })"
     want_err: true
-  - name: VARCHAR(16) is NULL
+  - name: Create VARCHAR(16) is NULL
     query: "CREATE (:Post { title: NULL })"
-  - name: STRING(10, 20) at minimum length
+  - name: Update VARCHAR(16) at maximum length
+    query: |
+      CREATE (:Post { id: 1, title: 'abcdefghijklmno' });
+      MATCH (p:Post { id: 1 }) SET p.title = 'abcdefghijklmnop'
+  - name: Update VARCHAR(16) above maximum length
+    query: |
+      CREATE (:Post { id: 2, title: 'abcdefghijklmno' });
+      MATCH (p:Post { id: 2 }) SET p.title = 'abcdefghijklmnopq'
+    want_err: true
+
+  # Relationship properties
+  - name: Create STRING(10, 20) at minimum length
     query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghij' }]->(:Post)"
-  - name: STRING(10, 20) below minimum length
+  - name: Create STRING(10, 20) below minimum length
     query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghi' }]->(:Post)"
     want_err: true
-  - name: STRING(10, 20) at maximum length
+  - name: Create STRING(10, 20) at maximum length
     query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghijklmnopqrst' }]->(:Post)"
-  - name: STRING(10, 20) above maximum length
+  - name: Create STRING(10, 20) above maximum length
     query: "CREATE (:Post)-[:RELATED_TO { tags: 'abcdefghijklmnopqrstu' }]->(:Post)"
     want_err: true
-  - name: STRING(10, 20) is NULL
+  - name: Create STRING(10, 20) is NULL
     query: "CREATE (:Post)-[:RELATED_TO { tags: NULL }]->(:Post)"
