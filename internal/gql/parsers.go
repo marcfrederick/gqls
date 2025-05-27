@@ -151,18 +151,27 @@ func parsePropertyTypesSpecification(ctx parser.IPropertyTypesSpecificationConte
 func parseExtendedAttributes(ctx parser.IPropertyTypeContext) (*ExtendedPropertyAttributes, error) {
 	propertyValueType := ctx.PropertyValueType()
 	if propertyValueType == nil {
-		return nil, fmt.Errorf("error parsing extended attributes: missing property value type")
+		return nil, fmt.Errorf("missing property value type in extended attributes")
 	}
 
 	var checkConstraint *string
-	switch allCheckConstraints := propertyValueType.AllCheckConstraint(); len(allCheckConstraints) {
-	case 0:
-		// No check constraints
-	case 1:
-		searchCondition := allCheckConstraints[0].SearchCondition().GetText()
-		checkConstraint = &searchCondition
-	default:
-		return nil, fmt.Errorf("error parsing extended attributes: multiple check constraints not supported")
+	allCheckConstraints := propertyValueType.AllCheckConstraint()
+	if len(allCheckConstraints) > 1 {
+		return nil, fmt.Errorf("multiple check constraints are not supported")
+	} else if len(allCheckConstraints) == 1 {
+		checkConstraintText := ""
+		valueExpression := allCheckConstraints[0].SearchCondition().BooleanValueExpression().ValueExpression()
+		for i, child := range valueExpression.GetChildren() {
+			if i > 0 {
+				checkConstraintText += " "
+			}
+			checkConstraintText += child.(antlr.ParseTree).GetText()
+		}
+
+		checkConstraintText = strings.TrimSpace(checkConstraintText)
+		if checkConstraintText != "" {
+			checkConstraint = &checkConstraintText
+		}
 	}
 
 	return &ExtendedPropertyAttributes{

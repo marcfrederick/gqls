@@ -19,6 +19,7 @@ var converters = []Converter{
 	&keyConstraintConverter{},
 	&stringLengthTriggerConverter{},
 	&numericRangeTriggerConverter{},
+	&checkConstraintTriggerConverter{},
 	&edgeEndpointsTriggerConverter{},
 }
 

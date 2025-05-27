@@ -48,6 +48,7 @@ func TestRun(t *testing.T) {
 			// Create the schema in Neo4j
 			statements := convertGQLToNeo4j(t, spec.Schema)
 			for _, statement := range splitStatements(statements) {
+				t.Logf("Creating schema statement for spec %q: %s", name, statement)
 				if _, err := session.Run(t.Context(), statement, nil); err != nil {
 					t.Fatalf("failed to create statement for spec %q: %v", name, err)
 				}
@@ -57,19 +58,24 @@ func TestRun(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				for _, tCase := range spec.Cases {
 					t.Run(tCase.Name, func(t *testing.T) {
+						var anyError error
 						for _, statement := range splitStatements(tCase.Query) {
 							res, err := session.Run(t.Context(), statement, nil)
 							if err == nil {
-								// APOC triggers don't return an error when they fail, so
-								// we need to consume the result to check for errors.
+								// Consume the result to check for APOC trigger errors.
 								_, err = res.Consume(t.Context())
 							}
-
-							if tCase.WantErr && err == nil {
-								t.Error("expected error, but got none")
-							} else if !tCase.WantErr && err != nil {
-								t.Errorf("unexpected error: %v", err)
+							if err != nil && anyError == nil {
+								anyError = err
 							}
+						}
+
+						if tCase.WantErr {
+							if anyError == nil {
+								t.Error("expected error, but got none")
+							}
+						} else if anyError != nil {
+							t.Errorf("unexpected error: %v", anyError)
 						}
 					})
 				}
