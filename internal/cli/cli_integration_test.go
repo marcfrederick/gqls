@@ -9,8 +9,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
+	"time"
 
 	"github.com/goccy/go-yaml"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -20,24 +20,50 @@ import (
 	"github.com/marcfrederick/gqls/internal/cli"
 )
 
-// neo4jVersion is the version of Neo4j to use in the integration tests.
-const neo4jVersion = "2025.04-enterprise"
+const (
+	neo4jVersion            = "2025.04-enterprise"
+	neo4jBoltPort           = "7687/tcp"
+	containerStartupTimeout = 2 * time.Minute
+	testSpecPattern         = "testdata/*.spec.yml"
+)
 
-var containerMutex sync.Mutex
+var (
+	sharedContainer testcontainers.Container
+	sharedDriver    neo4j.DriverWithContext
+)
 
+// testCase represents a single test case within a test specification.
 type testCase struct {
 	Name    string `yaml:"name"`
 	Query   string `yaml:"query"`
 	WantErr bool   `yaml:"want_err"`
 }
 
+// testSpec represents a complete test specification with schema and test cases.
 type testSpec struct {
 	Schema string     `yaml:"schema"`
 	Cases  []testCase `yaml:"cases"`
 }
 
+// TestMain sets up and tears down the shared Neo4j container for all integration tests.
+func TestMain(m *testing.M) {
+	ctx, cancel := context.WithTimeout(context.Background(), containerStartupTimeout)
+	defer cancel()
+
+	if err := setupInfrastructure(ctx); err != nil {
+		fmt.Printf("failed to setup test infrastructure: %v\n", err)
+		os.Exit(1)
+	}
+
+	exitCode := m.Run()
+
+	teardownTestInfrastructure()
+
+	os.Exit(exitCode)
+}
+
 func TestGQLSchemaConversion(t *testing.T) {
-	testSpecPaths, err := filepath.Glob("testdata/*.spec.yml")
+	testSpecPaths, err := filepath.Glob(testSpecPattern)
 	if err != nil {
 		t.Fatalf("failed to find test cases: %v", err)
 	}
@@ -46,43 +72,69 @@ func TestGQLSchemaConversion(t *testing.T) {
 		name := filepath.Base(testSpecPath)
 		spec := loadTestSpec(t, testSpecPath)
 
-		neo4jIntegrationTest(t, func(session neo4j.SessionWithContext) {
-			// Create the schema in Neo4j
-			statements := convertGQLToNeo4j(t, spec.Schema)
-			for _, statement := range splitStatements(statements) {
-				t.Logf("Creating schema statement for spec %q: %s", name, statement)
-				if _, err := session.Run(t.Context(), statement, nil); err != nil {
-					t.Fatalf("failed to create statement for spec %q: %v", name, err)
-				}
-			}
-
-			// Run test cases
-			t.Run(name, func(t *testing.T) {
-				for _, tCase := range spec.Cases {
-					t.Run(tCase.Name, func(t *testing.T) {
-						var anyError error
-						for _, statement := range splitStatements(tCase.Query) {
-							res, err := session.Run(t.Context(), statement, nil)
-							if err == nil {
-								// Consume the result to check for APOC trigger errors.
-								_, err = res.Consume(t.Context())
-							}
-							if err != nil && anyError == nil {
-								anyError = err
-							}
-						}
-
-						if tCase.WantErr {
-							if anyError == nil {
-								t.Error("expected error, but got none")
-							}
-						} else if anyError != nil {
-							t.Errorf("unexpected error: %v", anyError)
-						}
-					})
-				}
-			})
+		t.Run(name, func(t *testing.T) {
+			runSpecTest(t, name, spec)
 		})
+	}
+}
+
+// runSpecTest executes a single test specification with proper setup and cleanup.
+func runSpecTest(t *testing.T, specName string, spec testSpec) {
+	t.Helper()
+
+	withNeo4jSession(t, func(session neo4j.SessionWithContext) {
+		cleanDatabase(t, session)
+		createSchema(t, session, specName, spec.Schema)
+		runTestCases(t, session, spec.Cases)
+	})
+}
+
+// createSchema applies the GQL schema to the Neo4j database.
+func createSchema(t *testing.T, session neo4j.SessionWithContext, specName, schema string) {
+	t.Helper()
+
+	statements := convertGQLToNeo4j(t, schema)
+	for _, statement := range splitStatements(statements) {
+		t.Logf("Creating schema statement for spec %q: %s", specName, statement)
+		if _, err := session.Run(t.Context(), statement, nil); err != nil {
+			t.Fatalf("failed to create statement for spec %q: %v", specName, err)
+		}
+	}
+}
+
+// runTestCases executes all test cases for a specification.
+func runTestCases(t *testing.T, session neo4j.SessionWithContext, cases []testCase) {
+	t.Helper()
+
+	for _, tCase := range cases {
+		t.Run(tCase.Name, func(t *testing.T) {
+			executeTestCase(t, session, tCase)
+		})
+	}
+}
+
+// executeTestCase runs a single test case and validates the result.
+func executeTestCase(t *testing.T, session neo4j.SessionWithContext, tCase testCase) {
+	t.Helper()
+
+	var anyError error
+	for _, statement := range splitStatements(tCase.Query) {
+		res, err := session.Run(t.Context(), statement, nil)
+		if err == nil {
+			// Consume the result to check for APOC trigger errors.
+			_, err = res.Consume(t.Context())
+		}
+		if err != nil && anyError == nil {
+			anyError = err
+		}
+	}
+
+	if tCase.WantErr {
+		if anyError == nil {
+			t.Error("expected error, but got none")
+		}
+	} else if anyError != nil {
+		t.Errorf("unexpected error: %v", anyError)
 	}
 }
 
@@ -140,46 +192,69 @@ func convertGQLToNeo4j(t *testing.T, schema string) string {
 	return string(converted)
 }
 
-func neo4jIntegrationTest(t *testing.T, testFunc func(session neo4j.SessionWithContext)) {
+// cleanDatabase removes all data and schema objects from the Neo4j database.
+func cleanDatabase(t *testing.T, session neo4j.SessionWithContext) {
 	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+
+	if _, err := session.Run(t.Context(), "MATCH (n) DETACH DELETE n", nil); err != nil {
+		t.Logf("failed to delete nodes and relationships: %v", err)
 	}
 
-	containerMutex.Lock()
-	defer containerMutex.Unlock()
+	if err := dropAllConstraints(t, session); err != nil {
+		t.Logf("failed to drop constraints: %v", err)
+	}
 
-	container, err := startNeo4jContainer(t.Context())
+	if err := dropAllTriggers(t, session); err != nil {
+		t.Logf("failed to drop APOC triggers: %v", err)
+	}
+}
+
+// dropAllConstraints removes all constraints from the database.
+func dropAllConstraints(t *testing.T, session neo4j.SessionWithContext) error {
+	t.Helper()
+
+	result, err := session.Run(t.Context(), "SHOW CONSTRAINTS", nil)
 	if err != nil {
-		t.Fatalf("failed to start Neo4j container: %v", err)
-	}
-	testcontainers.CleanupContainer(t, container)
-
-	host, err := container.Host(t.Context())
-	if err != nil {
-		t.Fatalf("failed to get container host: %v", err)
+		return fmt.Errorf("failed to list constraints: %w", err)
 	}
 
-	port, err := container.MappedPort(t.Context(), "7687")
+	constraints, err := result.Collect(t.Context())
 	if err != nil {
-		t.Fatalf("failed to get mapped port: %v", err)
+		return fmt.Errorf("failed to collect constraints: %w", err)
 	}
 
-	driver, err := neo4j.NewDriverWithContext(fmt.Sprintf("bolt://%s:%d", host, port.Int()), neo4j.NoAuth())
-	if err != nil {
-		t.Fatalf("failed to create Neo4j driver: %v", err)
-	}
-	defer func() {
-		if closeErr := driver.Close(t.Context()); closeErr != nil {
-			t.Errorf("failed to close Neo4j driver: %v", closeErr)
+	for _, constraint := range constraints {
+		if name, found := constraint.AsMap()["name"]; found {
+			if nameStr, ok := name.(string); ok {
+				dropQuery := fmt.Sprintf("DROP CONSTRAINT %s", nameStr)
+				if _, err := session.Run(t.Context(), dropQuery, nil); err != nil {
+					t.Logf("failed to drop constraint %s: %v", nameStr, err)
+				}
+			}
 		}
-	}()
+	}
+	return nil
+}
 
-	if err := driver.VerifyConnectivity(t.Context()); err != nil {
-		t.Fatalf("failed to verify connectivity: %v", err)
+// dropAllTriggers removes all APOC triggers from the database.
+func dropAllTriggers(t *testing.T, session neo4j.SessionWithContext) error {
+	t.Helper()
+
+	_, err := session.Run(t.Context(), "CALL apoc.trigger.removeAll()", nil)
+	if err != nil {
+		return fmt.Errorf("failed to remove APOC triggers: %w", err)
+	}
+	return nil
+}
+
+func withNeo4jSession(t *testing.T, testFunc func(session neo4j.SessionWithContext)) {
+	t.Helper()
+
+	if sharedDriver == nil {
+		t.Fatal("shared Neo4j driver not initialized")
 	}
 
-	session := driver.NewSession(t.Context(), neo4j.SessionConfig{})
+	session := sharedDriver.NewSession(t.Context(), neo4j.SessionConfig{})
 	defer func() {
 		if closeErr := session.Close(t.Context()); closeErr != nil {
 			t.Errorf("failed to close Neo4j session: %v", closeErr)
@@ -187,6 +262,57 @@ func neo4jIntegrationTest(t *testing.T, testFunc func(session neo4j.SessionWithC
 	}()
 
 	testFunc(session)
+}
+
+// setupInfrastructure initializes the shared Neo4j container and driver.
+func setupInfrastructure(ctx context.Context) error {
+	container, err := startNeo4jContainer(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to start Neo4j container: %w", err)
+	}
+	sharedContainer = container
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get container host: %w", err)
+	}
+
+	port, err := container.MappedPort(ctx, neo4jBoltPort)
+	if err != nil {
+		return fmt.Errorf("failed to get mapped port: %w", err)
+	}
+
+	driver, err := neo4j.NewDriverWithContext(
+		fmt.Sprintf("bolt://%s:%d", host, port.Int()),
+		neo4j.NoAuth(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create Neo4j driver: %w", err)
+	}
+	sharedDriver = driver
+
+	if err := driver.VerifyConnectivity(ctx); err != nil {
+		return fmt.Errorf("failed to verify connectivity: %w", err)
+	}
+
+	return nil
+}
+
+// teardownTestInfrastructure cleans up the shared Neo4j container and driver.
+func teardownTestInfrastructure() {
+	ctx := context.Background()
+
+	if sharedDriver != nil {
+		if err := sharedDriver.Close(ctx); err != nil {
+			fmt.Printf("failed to close Neo4j driver: %v\n", err)
+		}
+	}
+
+	if sharedContainer != nil {
+		if err := sharedContainer.Terminate(ctx); err != nil {
+			fmt.Printf("failed to terminate container: %v\n", err)
+		}
+	}
 }
 
 // startNeo4jContainer starts a Neo4j container with the specified configuration.
