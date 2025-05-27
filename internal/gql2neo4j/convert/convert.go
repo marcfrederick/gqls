@@ -21,6 +21,7 @@ var converters = []Converter{
 	&numericRangeTriggerConverter{},
 	&checkConstraintTriggerConverter{},
 	&edgeEndpointsTriggerConverter{},
+	&cardinalityTriggerConverter{},
 }
 
 // Converters returns a list of all converters of a specific type.

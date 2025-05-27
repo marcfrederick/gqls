@@ -1650,7 +1650,7 @@ simpleArcTypePointingLeft
     ;
 
 arcWithCardinalityPointingLeft
-    : LEFT_ARROW cardinality LEFT_ARROW_BRACKET edgeTypeFiller RIGHT_BRACKET_MINUS cardinality MINUS_SIGN
+    : LEFT_ARROW cardinality MINUS_LEFT_BRACKET edgeTypeFiller RIGHT_BRACKET_MINUS cardinality MINUS_SIGN
     ;
 
 arcTypeUndirected

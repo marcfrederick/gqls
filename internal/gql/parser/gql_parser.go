@@ -1896,7 +1896,7 @@ func gqlParserInit() {
 		0, 0, 0, 3009, 3008, 1, 0, 0, 0, 3010, 641, 1, 0, 0, 0, 3011, 3012, 5,
 		340, 0, 0, 3012, 3013, 3, 616, 308, 0, 3013, 3014, 5, 350, 0, 0, 3014,
 		643, 1, 0, 0, 0, 3015, 3016, 5, 338, 0, 0, 3016, 3017, 3, 652, 326, 0,
-		3017, 3018, 5, 340, 0, 0, 3018, 3019, 3, 616, 308, 0, 3019, 3020, 5, 350,
+		3017, 3018, 5, 346, 0, 0, 3018, 3019, 3, 616, 308, 0, 3019, 3020, 5, 350,
 		0, 0, 3020, 3021, 3, 652, 326, 0, 3021, 3022, 5, 375, 0, 0, 3022, 645,
 		1, 0, 0, 0, 3023, 3026, 3, 648, 324, 0, 3024, 3026, 3, 650, 325, 0, 3025,
 		3023, 1, 0, 0, 0, 3025, 3024, 1, 0, 0, 0, 3026, 647, 1, 0, 0, 0, 3027,
@@ -52786,7 +52786,7 @@ type IArcWithCardinalityPointingLeftContext interface {
 	LEFT_ARROW() antlr.TerminalNode
 	AllCardinality() []ICardinalityContext
 	Cardinality(i int) ICardinalityContext
-	LEFT_ARROW_BRACKET() antlr.TerminalNode
+	MINUS_LEFT_BRACKET() antlr.TerminalNode
 	EdgeTypeFiller() IEdgeTypeFillerContext
 	RIGHT_BRACKET_MINUS() antlr.TerminalNode
 	MINUS_SIGN() antlr.TerminalNode
@@ -52872,8 +52872,8 @@ func (s *ArcWithCardinalityPointingLeftContext) Cardinality(i int) ICardinalityC
 	return t.(ICardinalityContext)
 }
 
-func (s *ArcWithCardinalityPointingLeftContext) LEFT_ARROW_BRACKET() antlr.TerminalNode {
-	return s.GetToken(GQLParserLEFT_ARROW_BRACKET, 0)
+func (s *ArcWithCardinalityPointingLeftContext) MINUS_LEFT_BRACKET() antlr.TerminalNode {
+	return s.GetToken(GQLParserMINUS_LEFT_BRACKET, 0)
 }
 
 func (s *ArcWithCardinalityPointingLeftContext) EdgeTypeFiller() IEdgeTypeFillerContext {
@@ -52938,7 +52938,7 @@ func (p *GQLParser) ArcWithCardinalityPointingLeft() (localctx IArcWithCardinali
 	}
 	{
 		p.SetState(3017)
-		p.Match(GQLParserLEFT_ARROW_BRACKET)
+		p.Match(GQLParserMINUS_LEFT_BRACKET)
 		if p.HasError() {
 			// Recognition error - abort rule
 			goto errorExit
