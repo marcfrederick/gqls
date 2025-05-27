@@ -17,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"github.com/marcfrederick/gqls/internal/cli"
+	"github.com/gql-schema/gqls/internal/cli"
 )
 
 const (

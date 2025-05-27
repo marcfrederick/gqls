@@ -5,7 +5,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/marcfrederick/gqls/internal/cli"
+	"github.com/gql-schema/gqls/internal/cli"
 )
 
 var (

@@ -3,7 +3,7 @@ package constraints_test
 import (
 	"testing"
 
-	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
+	"github.com/gql-schema/gqls/internal/neo4j/constraints"
 )
 
 func TestPropertyUniquenessConstraint_CreateStatement(t *testing.T) {

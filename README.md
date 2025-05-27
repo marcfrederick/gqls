@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/apache-2-0)
-[![Test](https://github.com/marcfrederick/gqls/actions/workflows/test.yml/badge.svg)](https://github.com/marcfrederick/gqls/actions/workflows/test.yml)
+[![Test](https://github.com/gql-schema/gqls/actions/workflows/test.yml/badge.svg)](https://github.com/gql-schema/gqls/actions/workflows/test.yml)
 
 <div align="center">
     <img src="web/assets/logo.png" alt="GQLS Logo" width="256px"/>
@@ -32,7 +32,7 @@ work with both technologies.
 ### Clone and Build
 
 ```shell
-git clone https://github.com/marcfrederick/gqls.git
+git clone https://github.com/gql-schema/gqls.git
 cd gqls
 make build
 ```
@@ -56,13 +56,13 @@ Make will automatically download the required ANTLR4 jar file if it is not alrea
 You can also use the Docker image to run GQLS without installing Go or any dependencies:
 
 ```shell
-docker run --rm -v $(pwd):/data marcfrederick/gqls:latest --input /data/schema.gql --output /data/output.cypher
+docker run --rm -v $(pwd):/data gql-schema/gqls:latest --input /data/schema.gql --output /data/output.cypher
 ```
 
 ### Pre-built Binaries
 
 Pre-built binaries for various platforms are available from
-the [GitHub Releases](https://github.com/marcfrederick/gqls/releases) page.
+the [GitHub Releases](https://github.com/gql-schema/gqls/releases) page.
 
 ## Usage
 
@@ -90,7 +90,7 @@ GQLS includes a web interface for interactive schema conversion. There are two w
 
 #### Static Website (Recommended)
 
-A static version of the web interface is available at: **https://marcfrederick.github.io/gqls**
+A static version of the web interface is available at: **https://gql-schema.github.io/gqls**
 
 This version:
 - Runs entirely in your browser using WebAssembly

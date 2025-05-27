@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/marcfrederick/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/neo4j"
 )
 
 // SubjectType defines the subject of a constraint.

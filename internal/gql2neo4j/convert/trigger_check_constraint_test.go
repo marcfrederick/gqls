@@ -3,8 +3,8 @@ package convert
 import (
 	"testing"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/gql/datatype"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/gql/datatype"
 )
 
 func Test_newCheckConstraintTrigger(t *testing.T) {

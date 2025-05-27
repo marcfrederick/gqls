@@ -8,8 +8,8 @@ import (
 	"errors"
 	"syscall/js"
 
-	"github.com/marcfrederick/gqls/internal/gql2neo4j"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
+	"github.com/gql-schema/gqls/internal/gql2neo4j"
+	"github.com/gql-schema/gqls/internal/gql2neo4j/convert"
 )
 
 // version is set to the current version at build time.

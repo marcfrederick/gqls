@@ -3,7 +3,7 @@ package convert
 import (
 	"testing"
 
-	"github.com/marcfrederick/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/gql"
 )
 
 func Test_newCardinalityTrigger(t *testing.T) {

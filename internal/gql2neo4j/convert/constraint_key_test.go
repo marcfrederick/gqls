@@ -6,10 +6,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/gql/datatype"
-	"github.com/marcfrederick/gqls/internal/neo4j"
-	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/gql/datatype"
+	"github.com/gql-schema/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/neo4j/constraints"
 )
 
 func Test_keyConstraintConverter_ConvertNode(t1 *testing.T) {

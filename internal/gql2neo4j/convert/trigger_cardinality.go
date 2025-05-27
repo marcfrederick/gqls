@@ -3,9 +3,9 @@ package convert
 import (
 	"fmt"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/neo4j"
-	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/neo4j/triggers"
 )
 
 var _ EdgeConverter = (*cardinalityTriggerConverter)(nil)

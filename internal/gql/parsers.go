@@ -7,8 +7,8 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/marcfrederick/gqls/internal/gql/datatype"
-	"github.com/marcfrederick/gqls/internal/gql/parser"
+	"github.com/gql-schema/gqls/internal/gql/datatype"
+	"github.com/gql-schema/gqls/internal/gql/parser"
 )
 
 // parseElementTypeSpecification parses the element type specification from the context.

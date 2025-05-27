@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log"
 
-	"github.com/marcfrederick/gqls/internal/gql/parser"
+	"github.com/gql-schema/gqls/internal/gql/parser"
 )
 
 // ErrNotImplemented indicates that a feature is not yet implemented.

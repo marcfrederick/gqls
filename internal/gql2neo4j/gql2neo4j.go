@@ -7,10 +7,10 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/gql/parser"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
-	"github.com/marcfrederick/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/gql/parser"
+	"github.com/gql-schema/gqls/internal/gql2neo4j/convert"
+	"github.com/gql-schema/gqls/internal/neo4j"
 )
 
 // ConvertBytes parses a GQL schema and generates Neo4j constraints for the specified version.

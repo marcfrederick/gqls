@@ -4,8 +4,8 @@ package convert
 import (
 	"embed"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/neo4j"
 )
 
 //go:embed templates/*

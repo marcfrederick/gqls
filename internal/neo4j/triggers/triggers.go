@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/marcfrederick/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/neo4j"
 )
 
 // Phase represents the phase of a trigger in Neo4j.

@@ -1,4 +1,4 @@
-{{- /*gotype: github.com/marcfrederick/gqls/internal/gql2neo4j/convert.CardinalityTriggerData*/ -}}
+{{- /*gotype: github.com/gql-schema/gqls/internal/gql2neo4j/convert.CardinalityTriggerData*/ -}}
 UNWIND $createdRelationships AS rel
 WITH rel, startNode(rel) AS startNode, endNode(rel) AS endNode
 WHERE type(rel) = "{{.RelationshipType}}"

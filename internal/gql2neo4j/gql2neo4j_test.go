@@ -9,13 +9,13 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/gql/datatype"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
-	"github.com/marcfrederick/gqls/internal/neo4j"
-	"github.com/marcfrederick/gqls/internal/neo4j/constraints"
-	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/gql/datatype"
+	"github.com/gql-schema/gqls/internal/gql2neo4j"
+	"github.com/gql-schema/gqls/internal/gql2neo4j/convert"
+	"github.com/gql-schema/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/neo4j/constraints"
+	"github.com/gql-schema/gqls/internal/neo4j/triggers"
 )
 
 type testCase struct {

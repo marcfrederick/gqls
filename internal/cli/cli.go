@@ -11,8 +11,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/marcfrederick/gqls/internal/gql2neo4j"
-	"github.com/marcfrederick/gqls/internal/gql2neo4j/convert"
+	"github.com/gql-schema/gqls/internal/gql2neo4j"
+	"github.com/gql-schema/gqls/internal/gql2neo4j/convert"
 )
 
 // Run initializes the CLI application and starts processing commands.

@@ -1,4 +1,4 @@
-module github.com/marcfrederick/gqls
+module github.com/gql-schema/gqls
 
 go 1.24
 

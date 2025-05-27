@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/marcfrederick/gqls/internal/gql"
-	"github.com/marcfrederick/gqls/internal/gql/datatype"
-	"github.com/marcfrederick/gqls/internal/neo4j"
-	"github.com/marcfrederick/gqls/internal/neo4j/triggers"
+	"github.com/gql-schema/gqls/internal/gql"
+	"github.com/gql-schema/gqls/internal/gql/datatype"
+	"github.com/gql-schema/gqls/internal/neo4j"
+	"github.com/gql-schema/gqls/internal/neo4j/triggers"
 )
 
 var _ PropertyConverter = (*numericRangeTriggerConverter)(nil)

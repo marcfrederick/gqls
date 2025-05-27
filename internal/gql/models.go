@@ -1,6 +1,6 @@
 package gql
 
-import "github.com/marcfrederick/gqls/internal/gql/datatype"
+import "github.com/gql-schema/gqls/internal/gql/datatype"
 
 // ExtendedElementAttributes represents extended element attributes.
 type ExtendedElementAttributes struct {
