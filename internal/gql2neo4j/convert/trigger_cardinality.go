@@ -47,6 +47,8 @@ type CardinalityTriggerData struct {
 	SourceUpperBound      int
 	DestinationLowerBound int
 	DestinationUpperBound int
+	SourceNodeType        string
+	DestinationNodeType   string
 }
 
 // newCardinalityTrigger creates a new cardinality trigger.
@@ -69,6 +71,16 @@ func newCardinalityTrigger(edgeType *gql.EdgeType, relationshipType string) (*tr
 	} else {
 		data.DestinationLowerBound = 0
 		data.DestinationUpperBound = -1
+	}
+
+	// Set source node type if available and minimum cardinality is required
+	if edgeType.SourceNodeType != nil && len(edgeType.SourceNodeType.NodeTypeLabelSet) > 0 {
+		data.SourceNodeType = edgeType.SourceNodeType.NodeTypeLabelSet[0]
+	}
+
+	// Set destination node type if available and minimum cardinality is required
+	if edgeType.DestinationNodeType != nil && len(edgeType.DestinationNodeType.NodeTypeLabelSet) > 0 {
+		data.DestinationNodeType = edgeType.DestinationNodeType.NodeTypeLabelSet[0]
 	}
 
 	kernelTransaction, err := renderTemplate("cardinality_trigger.cypher.tmpl", data)

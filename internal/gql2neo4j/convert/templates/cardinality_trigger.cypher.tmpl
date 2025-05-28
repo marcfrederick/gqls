@@ -25,3 +25,29 @@ CALL apoc.util.validate(
   []
 )
 RETURN null
+{{- if or (and (.SourceLowerBound) (gt .SourceLowerBound 0) (.SourceNodeType)) (and (.DestinationLowerBound) (gt .DestinationLowerBound 0) (.DestinationNodeType))}}
+UNION
+UNWIND $createdNodes AS node
+{{- if and (.SourceLowerBound) (gt .SourceLowerBound 0) (.SourceNodeType)}}
+WITH node WHERE node:{{.SourceNodeType}} AND size([(node)-[:{{.RelationshipType}}]-() | 1]) < {{.SourceLowerBound}}
+CALL apoc.util.validate(
+  true,
+  "{{.RelationshipType}} relationship cardinality constraint violated",
+  []
+)
+RETURN null
+{{- end}}
+{{- if and (.DestinationLowerBound) (gt .DestinationLowerBound 0) (.DestinationNodeType)}}
+{{- if and (.SourceLowerBound) (gt .SourceLowerBound 0) (.SourceNodeType)}}
+UNION
+UNWIND $createdNodes AS node
+{{- end}}
+WITH node WHERE node:{{.DestinationNodeType}} AND size([()-[:{{.RelationshipType}}]->(node) | 1]) < {{.DestinationLowerBound}}
+CALL apoc.util.validate(
+  true,
+  "{{.RelationshipType}} relationship cardinality constraint violated",
+  []
+)
+RETURN null
+{{- end}}
+{{- end}}
