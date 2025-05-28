@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/goccy/go-yaml"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/testcontainers/testcontainers-go"
@@ -327,8 +328,11 @@ func startNeo4jContainer(ctx context.Context) (testcontainers.Container, error) 
 				"NEO4J_AUTH":                       "none",
 				"NEO4J_ACCEPT_LICENSE_AGREEMENT":   "yes",
 				"NEO4J_dbms_usage__report_enabled": "false",
-				"NEO4JLABS_PLUGINS":                "[\"apoc\"]",
+				"NEO4J_PLUGINS":                    "[\"apoc\"]",
 				"NEO4J_apoc_trigger_enabled":       "true",
+			},
+			HostConfigModifier: func(hc *container.HostConfig) {
+				hc.AutoRemove = true
 			},
 		},
 		Started: true,
