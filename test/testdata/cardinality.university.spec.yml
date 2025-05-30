@@ -1,0 +1,76 @@
+schema: |-
+  CREATE PROPERTY GRAPH university {
+    (:Student { name :: STRING }),
+    (:Lecture { title :: STRING }),
+    (:Lecturer { name :: STRING }),
+    (:Student)-(0,*)-[:ENROLLED_IN]-(3,*)->(:Lecture),
+    (:Lecturer)-(0,*)-[:TEACHES]-(1,1)->(:Lecture)
+  }
+
+cases:
+  - name: Student not enrolled in any lecture
+    query: |-
+      CREATE (s1:Student {name: 'Bob'})
+
+  - name: Lecturer not teaching any lecture
+    query: |-
+      CREATE (lecturer:Lecturer {name: 'Dr. Smith'})
+
+  - name: Lecture with zero students
+    query: |-
+      CREATE (lecture:Lecture {title: 'History 101'}),
+             (lecturer:Lecturer {name: 'Dr. Jones'}),
+             (lecturer)-[:TEACHES]->(lecture)
+    want_err: true
+
+  - name: Lecture with one student
+    query: |-
+      CREATE (s1:Student {name: 'Alice'}),
+             (lecture:Lecture {title: 'Math 101'}),
+             (lecturer:Lecturer {name: 'Dr. Smith'}),
+             (s1)-[:ENROLLED_IN]->(lecture),
+             (lecturer)-[:TEACHES]->(lecture)
+    want_err: true
+
+  - name: Lecture with two students
+    query: |-
+      CREATE (s1:Student {name: 'Alice'}), (s2:Student {name: 'Bob'}),
+             (lecture:Lecture {title: 'Math 101'}),
+             (lecturer:Lecturer {name: 'Dr. Smith'}),
+             (s1)-[:ENROLLED_IN]->(lecture), (s2)-[:ENROLLED_IN]->(lecture),
+             (lecturer)-[:TEACHES]->(lecture)
+    want_err: true
+
+  - name: Lecture with three students
+    query: |-
+      CREATE (s1:Student {name: 'Alice'}), (s2:Student {name: 'Bob'}), (s3:Student {name: 'Charlie'}),
+             (lecture:Lecture {title: 'Math 101'}),
+             (lecturer:Lecturer {name: 'Dr. Smith'}),
+             (s1)-[:ENROLLED_IN]->(lecture), (s2)-[:ENROLLED_IN]->(lecture), (s3)-[:ENROLLED_IN]->(lecture),
+             (lecturer)-[:TEACHES]->(lecture)
+
+  - name: Lecture with three students and one lecturer
+    query: |-
+      CREATE (s1:Student {name: 'Alice'}), (s2:Student {name: 'Bob'}), (s3:Student {name: 'Charlie'}),
+             (lecture:Lecture {title: 'Math 101'}),
+             (lecturer1:Lecturer {name: 'Dr. Smith'}), (lecturer2:Lecturer {name: 'Dr. Jones'}),
+             (s1)-[:ENROLLED_IN]->(lecture), (s2)-[:ENROLLED_IN]->(lecture), (s3)-[:ENROLLED_IN]->(lecture),
+             (lecturer1)-[:TEACHES]->(lecture), (lecturer2)-[:TEACHES]->(lecture)
+    want_err: true
+
+  - name: Two lectures with three students each and two lecturers
+    query: |-
+      CREATE (s1:Student {name: 'Alice'}), (s2:Student {name: 'Bob'}), (s3:Student {name: 'Charlie'}),
+             (lecture1:Lecture {title: 'Math 101'}), (lecture2:Lecture {title: 'Physics 101'}),
+             (lecturer1:Lecturer {name: 'Dr. Smith'}), (lecturer2:Lecturer {name: 'Dr. Jones'}),
+             (s1)-[:ENROLLED_IN]->(lecture1), (s2)-[:ENROLLED_IN]->(lecture1), (s3)-[:ENROLLED_IN]->(lecture1),
+             (s1)-[:ENROLLED_IN]->(lecture2), (s2)-[:ENROLLED_IN]->(lecture2), (s3)-[:ENROLLED_IN]->(lecture2),
+             (lecturer1)-[:TEACHES]->(lecture1),
+             (lecturer2)-[:TEACHES]->(lecture2)
+
+  - name: Lecture with three students but no lecturer
+    query: |-
+      CREATE (s1:Student {name: 'Alice'}), (s2:Student {name: 'Bob'}), (s3:Student {name: 'Charlie'}),
+             (lecture:Lecture {title: 'Chemistry 101'}),
+             (s1)-[:ENROLLED_IN]->(lecture), (s2)-[:ENROLLED_IN]->(lecture), (s3)-[:ENROLLED_IN]->(lecture)
+    want_err: true

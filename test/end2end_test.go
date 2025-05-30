@@ -95,21 +95,9 @@ func createSchema(t *testing.T, session neo4j.SessionWithContext, specName, sche
 
 	statements := convertGQLToNeo4j(t, schema)
 	for _, statement := range splitStatements(statements) {
-		t.Logf("Creating schema statement for spec %q: %s", specName, statement)
 		if _, err := session.Run(t.Context(), statement, nil); err != nil {
 			t.Fatalf("failed to create statement for spec %q: %v", specName, err)
 		}
-	}
-}
-
-// runTestCases executes all test cases for a specification.
-func runTestCases(t *testing.T, session neo4j.SessionWithContext, cases []testCase) {
-	t.Helper()
-
-	for _, tCase := range cases {
-		t.Run(tCase.Name, func(t *testing.T) {
-			executeTestCase(t, session, tCase)
-		})
 	}
 }
 
@@ -132,6 +120,8 @@ func executeTestCase(t *testing.T, session neo4j.SessionWithContext, tCase testC
 	if tCase.WantErr {
 		if anyError == nil {
 			t.Error("expected error, but got none")
+		} else {
+			t.Logf("expected error occurred: %v", anyError)
 		}
 	} else if anyError != nil {
 		t.Errorf("unexpected error: %v", anyError)
