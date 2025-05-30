@@ -1,6 +1,6 @@
 //go:build integration
 
-package cli_test
+package test_test
 
 import (
 	"context"
@@ -63,7 +63,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func TestGQLSchemaConversion(t *testing.T) {
+func TestIntegrationEnd2End(t *testing.T) {
 	testSpecPaths, err := filepath.Glob(testSpecPattern)
 	if err != nil {
 		t.Fatalf("failed to find test cases: %v", err)

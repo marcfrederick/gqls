@@ -68,14 +68,19 @@ serve: build-static-site    ## Serve the web UI
 	cd web; python3 -m http.server 8000
 
 .PHONY: test
-test:                       ## Run unit tests
+test:                       ## Run all tests
 test: generate
-	$(GO) test -race -covermode=atomic -coverprofile=coverage.out ./... -v
+	$(GO) test -race -tags=integration ./... -v
+
+.PHONY: test-unit
+test-unit:                  ## Run unit tests
+test-unit: generate
+	$(GO) test -race ./... -v
 
 .PHONY: test-integration
-test-integration:           ## Run unit and integration tests
+test-integration:           ## Run integration tests
 test-integration: generate
-	$(GO) test -race -tags=integration ./... -v
+	$(GO) test -race -tags=integration -run=[iI]ntegration ./... -v
 
 .PHONY: clean
 clean:                      ## Clean up build artifacts
