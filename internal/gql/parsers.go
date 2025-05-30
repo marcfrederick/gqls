@@ -309,11 +309,21 @@ func parseBinaryExactNumericType(ctx parser.IBinaryExactNumericTypeContext) (*da
 			precision = parsedPrecision
 		}
 
+		var notNullContext parser.INotNullContext
+		switch {
+		case signedBinaryExactNumericType.NotNull() != nil:
+			notNullContext = signedBinaryExactNumericType.NotNull()
+		case signedBinaryExactNumericType.VerboseBinaryExactNumericType() != nil:
+			notNullContext = signedBinaryExactNumericType.VerboseBinaryExactNumericType().NotNull()
+		default:
+			notNullContext = nil
+		}
+
 		return &datatype.NumericDataTypeDescriptor{
 			Kind:      datatype.NumericKindExact,
 			Radix:     datatype.RadixBinary,
 			Precision: precision,
-			Nullable:  parseNotNull(signedBinaryExactNumericType.NotNull()),
+			Nullable:  parseNotNull(notNullContext),
 		}, nil
 	} else if unsignedBinaryExactNumericType := ctx.UnsignedBinaryExactNumericType(); unsignedBinaryExactNumericType != nil {
 		return nil, fmt.Errorf("unsigned binary exact numeric type is not supported: %w", ErrNotImplemented)

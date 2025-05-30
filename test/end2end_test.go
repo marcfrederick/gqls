@@ -74,20 +74,19 @@ func TestIntegrationEnd2End(t *testing.T) {
 		spec := loadTestSpec(t, testSpecPath)
 
 		t.Run(name, func(t *testing.T) {
-			runSpecTest(t, name, spec)
+			t.Helper()
+			withNeo4jSession(t, func(session neo4j.SessionWithContext) {
+				t.Helper()
+				for _, tCase := range spec.Cases {
+					t.Run(tCase.Name, func(t *testing.T) {
+						cleanDatabase(t, session)
+						createSchema(t, session, name, spec.Schema)
+						executeTestCase(t, session, tCase)
+					})
+				}
+			})
 		})
 	}
-}
-
-// runSpecTest executes a single test specification with proper setup and cleanup.
-func runSpecTest(t *testing.T, specName string, spec testSpec) {
-	t.Helper()
-
-	withNeo4jSession(t, func(session neo4j.SessionWithContext) {
-		cleanDatabase(t, session)
-		createSchema(t, session, specName, spec.Schema)
-		runTestCases(t, session, spec.Cases)
-	})
 }
 
 // createSchema applies the GQL schema to the Neo4j database.
