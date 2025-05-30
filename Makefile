@@ -59,7 +59,7 @@ build: generate
 
 .PHONY: build-static-site
 build-static-site: generate ## Build the static site
-	cp examples/schema.gql web/example-schema.gql
+	cp example.gql web/example-schema.gql
 	cp "$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js" web/wasm_exec.js
 	GOOS=js GOARCH=wasm $(GO) build -ldflags "-s -w -X 'main.version=$(VERSION)' -X 'main.commit=$(COMMIT)'" -o $(WASM_BINARY) $(WASM_ENTRYPOINT)
 
