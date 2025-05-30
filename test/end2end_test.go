@@ -95,6 +95,7 @@ func createSchema(t *testing.T, session neo4j.SessionWithContext, specName, sche
 
 	statements := convertGQLToNeo4j(t, schema)
 	for _, statement := range splitStatements(statements) {
+		t.Logf("Creating schema for spec %q: %s", specName, statement)
 		if _, err := session.Run(t.Context(), statement, nil); err != nil {
 			t.Fatalf("failed to create statement for spec %q: %v", specName, err)
 		}

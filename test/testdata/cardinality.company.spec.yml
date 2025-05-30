@@ -6,12 +6,12 @@ schema: |-
   }
 
 cases:
+  # CREATE
   - name: Single employee in one department
     query: |-
       CREATE (e1:Employee {name: 'Alice'}),
              (d1:Department {name: 'HR'}),
              (e1)-[:BELONGS_TO]->(d1)
-
   - name: Multiple employees in same department
     query: |-
       CREATE (e1:Employee {name: 'Alice'}),
@@ -19,17 +19,14 @@ cases:
              (d1:Department {name: 'HR'}),
              (e1)-[:BELONGS_TO]->(d1),
              (e2)-[:BELONGS_TO]->(d1)
-
   - name: Employee without assigned department
     query: |-
       CREATE (e1:Employee {name: 'Alice'})
     want_err: true
-
   - name: Department without assigned employees
     query: |-
       CREATE (d1:Department {name: 'HR'})
     want_err: true
-
   - name: Employee assigned to multiple departments
     query: |-
       CREATE (e1:Employee {name: 'Alice'}),
@@ -38,7 +35,6 @@ cases:
              (e1)-[:BELONGS_TO]->(d1),
              (e1)-[:BELONGS_TO]->(d2)
     want_err: true
-
   - name: Employee assigned to same department multiple times
     query: |-
       CREATE (e1:Employee {name: 'Alice'}),

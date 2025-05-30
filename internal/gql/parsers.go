@@ -2,6 +2,7 @@ package gql
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -404,8 +405,8 @@ func parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*Edge
 
 // parseEdgeTypePattern parses the edge type pattern.
 func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error) {
-	sourceCardinality := Cardinality{0, -1}
-	destinationCardinality := Cardinality{0, -1}
+	sourceCardinality := Cardinality{0, math.MaxInt}
+	destinationCardinality := Cardinality{0, math.MaxInt}
 
 	if directed := ctx.EdgeTypePatternDirected(); directed != nil {
 		if pointingRight := directed.EdgeTypePatternPointingRight(); pointingRight != nil {
@@ -500,7 +501,7 @@ func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error)
 }
 
 func parseCardinality(ctx parser.ICardinalityContext) (Cardinality, error) {
-	cardinality := Cardinality{LowerBound: 0, UpperBound: -1}
+	cardinality := Cardinality{LowerBound: 0, UpperBound: math.MaxInt}
 	if ctx == nil {
 		return cardinality, nil
 	}
@@ -515,7 +516,7 @@ func parseCardinality(ctx parser.ICardinalityContext) (Cardinality, error) {
 		}
 		if cardinalityUpperBound := cardinalityFiller.CardinalityUpperBound(); cardinalityUpperBound != nil {
 			if cardinalityUpperBound.ASTERISK() != nil {
-				cardinality.UpperBound = -1
+				cardinality.UpperBound = math.MaxInt
 			} else {
 				upperBound, err := strconv.Atoi(cardinalityUpperBound.UNSIGNED_DECIMAL_INTEGER().GetText())
 				if err != nil {
