@@ -4,7 +4,7 @@ schema: |-
     (:Lecture { title :: STRING }),
     (:Lecturer { name :: STRING }),
     (:Student)-(0,*)-[:ENROLLED_IN]-(3,*)->(:Lecture),
-    (:Lecturer)-(0,*)-[:TEACHES]-(1,1)->(:Lecture)
+    (:Lecture)<-(1,1)-[:TEACHES]-(0,*)-(:Lecturer)
   }
 
 cases:

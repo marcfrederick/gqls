@@ -446,13 +446,13 @@ func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error)
 				edgeTypeFiller = pointingLeft.ArcTypePointingLeft().SimpleArcTypePointingLeft().EdgeTypeFiller()
 			case pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft() != nil:
 				edgeTypeFiller = pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().EdgeTypeFiller()
-				source, err := parseCardinality(pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().Cardinality(0))
+				source, err := parseCardinality(pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().Cardinality(1))
 				if err != nil {
 					return nil, fmt.Errorf("error parsing cardinality: %w", err)
 				}
 				sourceCardinality = source
 
-				destination, err := parseCardinality(pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().Cardinality(1))
+				destination, err := parseCardinality(pointingLeft.ArcTypePointingLeft().ArcWithCardinalityPointingLeft().Cardinality(0))
 				if err != nil {
 					return nil, fmt.Errorf("error parsing cardinality: %w", err)
 				}
