@@ -188,6 +188,7 @@ func convertGQLToNeo4j(t *testing.T, schema string) string {
 		"--input", inputPath,
 		"--output", outputPath,
 		"--neo4j-version", "latest",
+		"--neo4j-edition", "enterprise",
 		"--apoc",
 	})
 
