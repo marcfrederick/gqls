@@ -71,20 +71,26 @@ func TestIntegrationEnd2End(t *testing.T) {
 
 	for _, testSpecPath := range testSpecPaths {
 		name := filepath.Base(testSpecPath)
-		spec := loadTestSpec(t, testSpecPath)
-
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-			withNeo4jSession(t, func(session neo4j.SessionWithContext) {
-				t.Helper()
-				for _, tCase := range spec.Cases {
-					t.Run(tCase.Name, func(t *testing.T) {
-						cleanDatabase(t, session)
-						createSchema(t, session, name, spec.Schema)
-						executeTestCase(t, session, tCase)
+
+			for i, tSpec := range loadTestSpecs(t, testSpecPath) {
+				t.Run(fmt.Sprintf("[%d]", i), func(t *testing.T) {
+					t.Helper()
+
+					withNeo4jSession(t, func(session neo4j.SessionWithContext) {
+						t.Helper()
+
+						for _, tCase := range tSpec.Cases {
+							t.Run(tCase.Name, func(t *testing.T) {
+								cleanDatabase(t, session)
+								createSchema(t, session, name, tSpec.Schema)
+								executeTestCase(t, session, tCase)
+							})
+						}
 					})
-				}
-			})
+				})
+			}
 		})
 	}
 }
@@ -129,8 +135,8 @@ func executeTestCase(t *testing.T, session neo4j.SessionWithContext, tCase testC
 	}
 }
 
-// loadTestSpec loads a test specification from a YAML file.
-func loadTestSpec(t *testing.T, path string) testSpec {
+// loadTestSpecs loads test specifications from a YAML file.
+func loadTestSpecs(t *testing.T, path string) []testSpec {
 	t.Helper()
 
 	data, err := os.ReadFile(filepath.Clean(path))
@@ -138,11 +144,11 @@ func loadTestSpec(t *testing.T, path string) testSpec {
 		t.Fatalf("failed to read test file %q: %v", path, err)
 	}
 
-	var tc testSpec
-	if err := yaml.Unmarshal(data, &tc); err != nil {
+	var ts []testSpec
+	if err := yaml.Unmarshal(data, &ts); err != nil {
 		t.Fatalf("failed to unmarshal test file %q: %v", path, err)
 	}
-	return tc
+	return ts
 }
 
 // splitStatements splits a string into individual statements based on semicolons.
