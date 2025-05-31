@@ -14,7 +14,7 @@ CALL apoc.util.validate(
     '{{.SourceNodeType}} {{.RelationshipType}} constraint violated',
     []
 )
-RETURN null
+RETURN NULL
 {{if or (gt .DestinationLowerBound 0) (gt .DestinationUpperBound 0)}}
 
 UNION
@@ -36,5 +36,5 @@ CALL apoc.util.validate(
     '{{.DestinationNodeType}} {{.RelationshipType}} constraint violated',
     []
 )
-RETURN null
+RETURN NULL
 {{- end}}
