@@ -86,21 +86,7 @@ Run the `gqls` command with the required options:
 
 ### Web Interface
 
-GQLS includes a web interface for interactive schema conversion. There are two ways to use it:
-
-#### Static Website (Recommended)
-
-A static version of the web interface is available at: **https://gql-schema.github.io/gqls**
-
-This version:
-- Runs entirely in your browser using WebAssembly
-- Requires no server-side processing
-- Works offline once loaded
-- Provides the same functionality as the CLI tool
-
-#### Local Server
-
-You can also run a local web server:
+GQLS includes a web interface for interactive schema conversion. To use it, run a local web server:
 
 ```bash
 ./gqls --serve :8080
