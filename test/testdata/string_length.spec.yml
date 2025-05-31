@@ -14,12 +14,14 @@
     - name: Create VARCHAR(16) is NULL
       query: "CREATE (:Post { title: NULL })"
     - name: Update VARCHAR(16) at maximum length
+      setup: |-
+        CREATE (:Post { id: 1, title: 'abcdefghijklmno' })
       query: |
-        CREATE (:Post { id: 1, title: 'abcdefghijklmno' });
         MATCH (p:Post { id: 1 }) SET p.title = 'abcdefghijklmnop'
     - name: Update VARCHAR(16) above maximum length
+      setup: |-
+        CREATE (:Post { id: 2, title: 'abcdefghijklmno' })
       query: |
-        CREATE (:Post { id: 2, title: 'abcdefghijklmno' });
         MATCH (p:Post { id: 2 }) SET p.title = 'abcdefghijklmnopq'
       want_err: true
 

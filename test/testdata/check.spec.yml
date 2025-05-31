@@ -17,21 +17,25 @@
       query: "CREATE (:Person { age: 121 })"
       want_err: true
     - name: Update INTEGER at lower bound
+      setup: |-
+        CREATE (:Person { id: 1, age: 60 })
       query: |
-        CREATE (:Person { id: 1, age: 60 });
         MATCH (p:Person { id: 1 }) SET p.age = 18
     - name: Update INTEGER below lower bound
+      setup: |-
+        CREATE (:Person { id: 2, age: 60 })
       query: |
-        CREATE (:Person { id: 2, age: 60 });
         MATCH (p:Person { id: 2 }) SET p.age = 17
       want_err: true
     - name: Update INTEGER at upper bound
+      setup: |-
+        CREATE (:Person { id: 3, age: 60 })
       query: |
-        CREATE (:Person { id: 3, age: 60 });
         MATCH (p:Person { id: 3 }) SET p.age = 120
     - name: Update INTEGER above upper bound
+      setup: |-
+        CREATE (:Person { id: 4, age: 60 })
       query: |
-        CREATE (:Person { id: 4, age: 60 });
         MATCH (p:Person { id: 4 }) SET p.age = 121
       want_err: true
 
@@ -42,11 +46,13 @@
       query: "CREATE (:Person)-[:FRIEND_OF { foo: 'abcdefghij' }]->(:Person)"
       want_err: true
     - name: Update STRING at max length
+      setup: |-
+        CREATE (:Person)-[:FRIEND_OF { foo: '' }]->(:Person)
       query: |-
-        CREATE (:Person)-[:FRIEND_OF { foo: '' }]->(:Person);
-        MATCH ()-[r:FRIEND_OF]->() SET r.foo = 'abcdefghi';
+        MATCH ()-[r:FRIEND_OF]->() SET r.foo = 'abcdefghi'
     - name: Update STRING above max length
+      setup: |-
+        CREATE (:Person)-[:FRIEND_OF { foo: '' }]->(:Person)
       query: |
-        CREATE (:Person)-[:FRIEND_OF { foo: '' }]->(:Person);
-        MATCH ()-[r:FRIEND_OF]->() SET r.foo = 'abcdefghij';
+        MATCH ()-[r:FRIEND_OF]->() SET r.foo = 'abcdefghij'
       want_err: true

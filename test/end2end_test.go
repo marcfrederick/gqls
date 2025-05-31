@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/goccy/go-yaml"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 
@@ -36,6 +37,7 @@ var (
 // testCase represents a single test case within a test specification.
 type testCase struct {
 	Name    string `yaml:"name"`
+	Setup   string `yaml:"setup"`
 	Query   string `yaml:"query"`
 	WantErr bool   `yaml:"want_err"`
 }
@@ -112,27 +114,34 @@ func createSchema(t *testing.T, session neo4j.SessionWithContext, specName, sche
 func executeTestCase(t *testing.T, session neo4j.SessionWithContext, tCase testCase) {
 	t.Helper()
 
-	var anyError error
-	for _, statement := range splitStatements(tCase.Query) {
-		res, err := session.Run(t.Context(), statement, nil)
-		if err == nil {
-			// Consume the result to check for APOC trigger errors.
-			_, err = res.Consume(t.Context())
-		}
-		if err != nil && anyError == nil {
-			anyError = err
+	if tCase.Setup != "" {
+		if err := executeStatement(t, session, tCase.Setup); err != nil {
+			assert.Failf(t, "Setup failed", "failed to execute setup for test case %q: %v", tCase.Name, err)
 		}
 	}
 
+	err := executeStatement(t, session, tCase.Query)
 	if tCase.WantErr {
-		if anyError == nil {
-			t.Error("expected error, but got none")
-		} else {
-			t.Logf("expected error occurred: %v", anyError)
-		}
-	} else if anyError != nil {
-		t.Errorf("unexpected error: %v", anyError)
+		assert.Error(t, err, "expected an error for test case %q, but got none", tCase.Name)
+	} else {
+		assert.NoError(t, err, "expected no error for test case %q", tCase.Name)
 	}
+}
+
+func executeStatement(t *testing.T, session neo4j.SessionWithContext, statement string) error {
+	t.Helper()
+
+	result, err := session.Run(t.Context(), statement, nil)
+	if err != nil {
+		return fmt.Errorf("failed to execute statement %q: %w", statement, err)
+	}
+
+	// Consume the result to check for APOC trigger errors.
+	if _, err := result.Consume(t.Context()); err != nil {
+		return fmt.Errorf("failed to consume result for statement %q: %w", statement, err)
+	}
+
+	return nil
 }
 
 // loadTestSpecs loads test specifications from a YAML file.
