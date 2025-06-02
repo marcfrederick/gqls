@@ -29,15 +29,25 @@ func (p *edgeEndpointsTriggerConverter) ConvertEdge(edgeType *gql.EdgeType) ([]n
 	}
 	edgeTypeLabel := edgeType.EdgeTypeLabelSet[0]
 
-	if len(edgeType.SourceNodeType.NodeTypeLabelSet) != 1 {
+	var startNodeType string
+	switch {
+	case edgeType.SourceNodeType.Alias != "":
+		startNodeType = edgeType.SourceNodeType.Alias
+	case len(edgeType.SourceNodeType.NodeTypeLabelSet) != 1:
 		return nil, fmt.Errorf("error Neo4j only supports one label per source node type")
+	default:
+		startNodeType = edgeType.SourceNodeType.NodeTypeLabelSet[0]
 	}
-	startNodeType := edgeType.SourceNodeType.NodeTypeLabelSet[0]
 
-	if len(edgeType.DestinationNodeType.NodeTypeLabelSet) != 1 {
+	var endNodeType string
+	switch {
+	case edgeType.DestinationNodeType.Alias != "":
+		endNodeType = edgeType.DestinationNodeType.Alias
+	case len(edgeType.DestinationNodeType.NodeTypeLabelSet) != 1:
 		return nil, fmt.Errorf("error Neo4j only supports one label per destination node type")
+	default:
+		endNodeType = edgeType.DestinationNodeType.NodeTypeLabelSet[0]
 	}
-	endNodeType := edgeType.DestinationNodeType.NodeTypeLabelSet[0]
 
 	edgeEndpointTrigger, err := newEdgeEndpointTrigger(edgeTypeLabel, startNodeType, endNodeType)
 	if err != nil {

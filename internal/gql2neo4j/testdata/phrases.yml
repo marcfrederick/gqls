@@ -1,0 +1,15 @@
+input: |-
+  CREATE PROPERTY GRAPH student_relationships {
+    NODE :Student { id :: INT, name :: STRING },
+    NODE :Degree { id :: INT, name :: STRING },
+    DIRECTED EDGE STUDIES {} CONNECTING (Student -> Degree),
+    DIRECTED EDGE TUTORS {} CONNECTING (Student -> Student)
+  }
+
+want: |-
+  CREATE CONSTRAINT type_student_id FOR (n:Student) REQUIRE n.id IS :: INTEGER;
+  CREATE CONSTRAINT type_student_name FOR (n:Student) REQUIRE n.name IS :: STRING;
+  CREATE CONSTRAINT type_degree_id FOR (n:Degree) REQUIRE n.id IS :: INTEGER;
+  CREATE CONSTRAINT type_degree_name FOR (n:Degree) REQUIRE n.name IS :: STRING;
+  CALL apoc.trigger.add("edge_endpoint_edge_student_degree", "UNWIND $createdRelationships AS rel WITH rel WHERE type(rel) = \"EDGE\" AND NOT (startNode(rel):Student AND endNode(rel):Degree) CALL apoc.util.validate( true, \"EDGE relationship must be between Student and Degree\", [] ) RETURN NULL", {phase: "before"});
+  CALL apoc.trigger.add("edge_endpoint_edge_student_student", "UNWIND $createdRelationships AS rel WITH rel WHERE type(rel) = \"EDGE\" AND NOT (startNode(rel):Student AND endNode(rel):Student) CALL apoc.util.validate( true, \"EDGE relationship must be between Student and Student\", [] ) RETURN NULL", {phase: "before"});

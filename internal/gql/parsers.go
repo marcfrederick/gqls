@@ -126,7 +126,11 @@ func parseNodeTypePropertyTypes(ctx parser.INodeTypePropertyTypesContext) ([]*Pr
 
 // parsePropertyTypesSpecification parses the property types specification.
 func parsePropertyTypesSpecification(ctx parser.IPropertyTypesSpecificationContext) ([]*PropertyType, error) {
-	propertyTypes := ctx.PropertyTypeList().AllPropertyType()
+	propertyTypeList := ctx.PropertyTypeList()
+	if propertyTypeList == nil {
+		return []*PropertyType{}, nil
+	}
+	propertyTypes := propertyTypeList.AllPropertyType()
 
 	propertyTypeSet := make([]*PropertyType, 0, len(propertyTypes))
 	for _, propertyType := range propertyTypes {
@@ -397,10 +401,48 @@ func parseEdgeTypeSpecification(ctx parser.IEdgeTypeSpecificationContext) (*Edge
 		}
 		return edgeType, nil
 	} else if edgeTypePhrase := ctx.EdgeTypePhrase(); edgeTypePhrase != nil {
-		// edge type phrases work with aliases; they are not yet implemented
-		return nil, fmt.Errorf("error edge type phrase not yet implemented: %w", ErrNotImplemented)
+		edgeType, err := parseEdgeTypePhrase(edgeTypePhrase)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing edge type phrase: %w", err)
+		}
+		return edgeType, nil
 	}
 	panic("unreachable")
+}
+
+// parseEdgeTypePhrase parses the edge type phrase.
+func parseEdgeTypePhrase(ctx parser.IEdgeTypePhraseContext) (*EdgeType, error) {
+	endpointPairPhrase := ctx.EndpointPairPhrase()
+	if endpointPairPhrase == nil {
+		return nil, fmt.Errorf("error missing endpoint pair phrase in edge type phrase: %s", ctx.GetText())
+	}
+
+	var sourceAlias parser.ISourceNodeTypeAliasContext
+	var destinationAlias parser.IDestinationNodeTypeAliasContext
+	if directed := endpointPairPhrase.EndpointPair().EndpointPairDirected(); directed != nil {
+		if pointingRight := directed.EndpointPairPointingRight(); pointingRight != nil {
+			sourceAlias = pointingRight.SourceNodeTypeAlias()
+			destinationAlias = pointingRight.DestinationNodeTypeAlias()
+		} else if pointingLeft := directed.EndpointPairPointingLeft(); pointingLeft != nil {
+			sourceAlias = pointingLeft.SourceNodeTypeAlias()
+			destinationAlias = pointingLeft.DestinationNodeTypeAlias()
+		} else {
+			panic("unreachable: invalid directed edge type phrase")
+		}
+	} else if undirected := endpointPairPhrase.EndpointPair().EndpointPairUndirected(); undirected != nil {
+		sourceAlias = undirected.SourceNodeTypeAlias()
+		destinationAlias = undirected.DestinationNodeTypeAlias()
+	} else {
+		return nil, fmt.Errorf("error invalid edge type phrase: %s", ctx.GetText())
+	}
+
+	edgeType, err := parseEdgeTypeWithAliases(EdgeKindDirected, sourceAlias, destinationAlias, ctx.EdgeTypePhraseFiller().EdgeTypeFiller())
+	if err != nil {
+		return nil, fmt.Errorf("error parsing edge type: %w", err)
+	}
+	edgeType.EdgeTypeLabelSet = []string{ctx.EdgeSynonym().GetText()}
+
+	return edgeType, nil
 }
 
 // parseEdgeTypePattern parses the edge type pattern.
@@ -431,7 +473,7 @@ func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error)
 				destinationCardinality = destination
 			}
 
-			e, err := parseEdgeType(EdgeKindDirected, pointingRight.SourceNodeTypeReference(), pointingRight.DestinationNodeTypeReference(), edgeTypeFiller)
+			e, err := parseEdgeTypeWithReferences(EdgeKindDirected, pointingRight.SourceNodeTypeReference(), pointingRight.DestinationNodeTypeReference(), edgeTypeFiller)
 			if err != nil {
 				return nil, fmt.Errorf("error parsing edge type: %w", err)
 			}
@@ -459,7 +501,7 @@ func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error)
 				destinationCardinality = destination
 			}
 
-			edgeType, err := parseEdgeType(EdgeKindDirected, pointingLeft.SourceNodeTypeReference(), pointingLeft.DestinationNodeTypeReference(), edgeTypeFiller)
+			edgeType, err := parseEdgeTypeWithReferences(EdgeKindDirected, pointingLeft.SourceNodeTypeReference(), pointingLeft.DestinationNodeTypeReference(), edgeTypeFiller)
 			if err != nil {
 				return nil, fmt.Errorf("error parsing edge type: %w", err)
 			}
@@ -488,7 +530,7 @@ func parseEdgeTypePattern(ctx parser.IEdgeTypePatternContext) (*EdgeType, error)
 			destinationCardinality = destination
 		}
 
-		edgeType, err := parseEdgeType(EdgeKindUndirected, undirected.SourceNodeTypeReference(), undirected.DestinationNodeTypeReference(), edgeTypeFiller)
+		edgeType, err := parseEdgeTypeWithReferences(EdgeKindUndirected, undirected.SourceNodeTypeReference(), undirected.DestinationNodeTypeReference(), edgeTypeFiller)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing edge type: %w", err)
 		}
@@ -530,8 +572,8 @@ func parseCardinality(ctx parser.ICardinalityContext) (Cardinality, error) {
 	return cardinality, nil
 }
 
-// parseEdgeType parses the edge type from the context.
-func parseEdgeType(
+// parseEdgeTypeWithReferences parses the edge type from the context.
+func parseEdgeTypeWithReferences(
 	edgeTypeKind EdgeKind,
 	sourceCtx parser.ISourceNodeTypeReferenceContext,
 	destCtx parser.IDestinationNodeTypeReferenceContext,
@@ -577,6 +619,29 @@ func parseEdgeType(
 	}, nil
 }
 
+// parseEdgeTypeWithAliases parses the edge type with aliases from the context.
+func parseEdgeTypeWithAliases(
+	edgeTypeKind EdgeKind,
+	sourceCtx parser.ISourceNodeTypeAliasContext,
+	destCtx parser.IDestinationNodeTypeAliasContext,
+	edgeTypeFillerCtx parser.IEdgeTypeFillerContext,
+) (*EdgeType, error) {
+	var err error
+
+	labelSet, propertySet, err := parseEdgeTypeFiller(edgeTypeFillerCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing property types specification: %w", err)
+	}
+
+	return &EdgeType{
+		Kind:                edgeTypeKind,
+		SourceNodeType:      &NodeType{Alias: sourceCtx.GetText()},
+		DestinationNodeType: &NodeType{Alias: destCtx.GetText()},
+		EdgeTypeLabelSet:    labelSet,
+		EdgeTypePropertySet: propertySet,
+	}, nil
+}
+
 // parseEdgeTypeFiller parses the edge type filler.
 func parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]string, []*PropertyType, error) {
 	impliedContent := ctx.EdgeTypeImpliedContent()
@@ -593,5 +658,8 @@ func parseEdgeTypeFiller(ctx parser.IEdgeTypeFillerContext) ([]string, []*Proper
 		}
 	}
 
-	return parseLabelSetPhrase(impliedContent.EdgeTypeLabelSet().LabelSetPhrase()), propertyTypesSpec, nil
+	if edgeTypeLabelSet := impliedContent.EdgeTypeLabelSet(); edgeTypeLabelSet != nil {
+		return parseLabelSetPhrase(edgeTypeLabelSet.LabelSetPhrase()), propertyTypesSpec, nil
+	}
+	return []string{}, propertyTypesSpec, nil
 }
